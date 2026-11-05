@@ -1,0 +1,694 @@
+=encoding utf8
+
+=head1 NAME
+
+Log::Report::Message - a piece of text to be translated
+
+=head1 INHERITANCE
+
+ Log::Report::Message is extended by
+   Dancer2::Plugin::LogReport::Message
+
+=head1 SYNOPSIS
+
+  # Objects created by Log::Report's __ functions
+  # Full feature description in the DETAILS section
+
+  # no interpolation
+  __"Hello, World";
+
+  # with interpolation
+  __x"age {years}", years => 12;
+
+  # interpolation for one or many
+  my $nr_files = @files;
+  __nx"one file", "{_count} files", $nr_files;
+  __nx"one file", "{_count} files", \@files;
+
+  # interpolation of arrays
+  __x"price-list: {prices%.2f}", prices => \@prices, _join => ', ';
+
+  # white-spacing on msgid preserved
+  print __"\tCongratulations,\n";
+  print "\t", __("Congratulations,"), "\n";  # same
+
+=head1 DESCRIPTION
+
+Any use of a constructor function exported by L<Log::Report|Log::Report>, like
+C<__()> (the function is named underscore-underscore) or C<__x()>
+(underscore-underscore-x) will result in this Message object.  It will capture
+some environmental information as well.
+
+The optional translation is delayed until it is really needed.
+Creating an object first and translating it later, might be slower than
+translating it immediately.  However (by design decissions of L<Log::Report|Log::Report>)
+on the location where the message is produced, we do not yet know in
+what language to translate it to: that depends on the actual log dispatcher
+configurations in the main program.
+
+=head1 OVERLOADED
+
+=over 4
+
+=item overload: B<'""'> stringification
+
+When the object is used in string context, it will get translated.
+Implemented as L<toString()|Log::Report::Message/"Processing">.
+
+=item overload: B<'&{}'> used as function
+
+When the object is called as function, a new object is created with
+the data from the original one but updated with the new parameters.
+Implemented in C<clone()>.
+
+=item overload: B<'.'> concatenation
+
+An (accidental) use of concatenation (a dot where a comma should be
+used) would immediately stringify the object.  This is avoided by
+overloading that operation.
+
+=back
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item $obj-E<gt>B<clone>(%options, $variables)
+
+Returns a new object which copies info from original, and updates it
+with the specified C<%options> and C<$variables>.  The advantage is that the
+cached translations are shared between the objects.
+
+» example: use of clone()
+
+  my $s = __x "found {nr} files", nr => 5;
+  my $t = $s->clone(nr => 3);
+  my $t = $s->(nr => 3);      # equivalent
+  print $s;     # found 5 files
+  print $t;     # found 3 files
+
+=item $class-E<gt>B<new>(%options)
+
+B<End-users: do not use this method directly>, but use
+L<Log::Report::__()|Log::Report/"Messages (optionally translatable)">, L<Log::Report::__x()|Log::Report/"Messages (optionally translatable)"> and friends.  The C<%options>
+is a mixed list of object initiation parameters (all with a leading
+underscore) and variables to be filled in into the translated C<_msgid>
+string.
+
+ -Option   --Default
+  _append    undef
+  _category  undef
+  _class     undef
+  _classes   undef
+  _context   undef
+  _count     undef
+  _domain    <from "use Log::Report">
+  _expand    false
+  _join      $" $LIST_SEPARATOR
+  _lang      <from locale>
+  _msgctxt   undef
+  _msgid     undef
+  _plural    undef
+  _prepend   undef
+  _tag       []
+  _tags      []
+  _to        undef
+
+=over 2
+
+=item _append => $text|$message
+
+Some C<$text> or other C<$message> object which need to be pasted after this
+message object.
+
+=item _category => INTEGER
+
+The category when the real gettext library is used, for instance
+LC_MESSAGES.
+
+=item _class => $tags|\@tags
+
+Deprecated alternative for C<_tag>.
+
+=item _classes => $tags|\@tags
+
+Deprecated alternative for C<_tag>.
+
+=item _context => $keyword|\@keywords
+
+[1.00] Set the C<@keywords> which can be used to select alternatives
+between translations.  Read the DETAILS section in
+L<Log::Report::Translator::Context|Log::Report::Translator::Context>
+
+=item _count => INTEGER|ARRAY|HASH
+
+When defined, the C<_plural> need to be defined as well.  When an
+ARRAY is provided, the length of the ARRAY is taken.  When a HASH
+is given, the number of keys in the HASH is used.
+
+=item _domain => $name|$object
+
+The text-domain (translation table) to which this C<_msgid> belongs.
+
+With this parameter, your can "borrow" translations from other textdomains.
+Be very careful with this (although there are good use-cases)  The xgettext
+msgid extractor may add the used msgid to this namespace as well.  To
+avoid that, add a harmless '+':
+
+  print __x(+"errors", _domain => 'global');
+
+The extractor will not take the msgid when it is an expression.  The '+'
+has no effect on the string at runtime.
+
+=item _expand => BOOLEAN
+
+Indicates whether variables are to be filled-in; whether C<__x> or C<__> was
+used to define the message.
+
+=item _join => $separator
+
+Which C<$separator> string to be used then an ARRAY is being filled-in.
+
+=item _lang => ISO
+
+[1.00] Override language setting from locale, for instance because that
+is not configured correctly (yet).  This does not extend to prepended
+or appended translated message object.
+
+=item _msgctxt => $context
+
+[1.22] Message C<$context> in the translation file, the traditional use.  Cannot
+be combined with C<_context> on the same msgids.
+
+=item _msgid => $msgid
+
+The message label, which refers to some translation information.
+Usually a string which is close the English version of the message.
+This will also be used if there is no translation possible/known.
+
+Leading white-space C<\s> will be added to C<_prepend>.  Trailing
+white-space will be added before C<_append>.
+
+=item _plural => $msgid
+
+Can be used together with C<_count>.  This plural form of the C<_msgid>
+text is used to simplify the work of translators, and as fallback when
+no translation is possible: therefore, this can best resemble an
+English message.
+
+White-space at the beginning and end of the string are stripped off.
+The white-space provided by the C<_msgid> will be used.
+
+=item _prepend => $text|$message
+
+Some C<$text> or other C<$message> object which need to be glued before this
+message object.
+
+=item _tag => $tags|\@tags
+
+When messages are used for exception based programming, you add a
+C<_tag> parameter to the argument list.  Later, with for instance
+L<Log::Report::Dispatcher::Try::wasFatal(tag)|Log::Report::Dispatcher::Try/"Status">, you can check the
+category (group, class) of the exception.
+
+The C<$tags> is interpreted as comma- and/or blank separated list of class
+tokens (barewords), the ARRAY lists all tags separately. See L<tags()|Log::Report::Message/"Accessors">.
+
+=item _tags => $tags|\@tags
+
+Alternative name for C<_tag>
+
+=item _to => $dispatcher
+
+Specify the C<$dispatcher> as destination explicitly. Short
+for  C<< report {to => NAME}, ... >>  See L<to()|Log::Report::Message/"Accessors">
+
+=back
+
+=back
+
+=head2 Accessors
+
+=over 4
+
+=item $obj-E<gt>B<append>()
+
+Returns the string or L<Log::Report::Message|Log::Report::Message> object which is appended
+after this one.  Usually C<undef>.
+
+=item $obj-E<gt>B<classes>()
+
+Deprecated alternative for L<tags()|Log::Report::Message/"Accessors">.
+
+=item $obj-E<gt>B<context>()
+
+Returns an HASH if there is a context defined for this message.
+
+=item $obj-E<gt>B<count>()
+
+Returns the count, which is used to select the translation
+alternatives.
+
+=item $obj-E<gt>B<domain>()
+
+Returns the domain of the first translatable string in the structure.
+
+=item $obj-E<gt>B<errno>( [$errno] )
+
+[1.38] Returns the value of the C<_errno> key, to indicate the error
+number (to be returned from your script).  Usually, this method will
+return C<undef>.  For FAILURE, FAULT, and ALERT, the errno is by default
+taken from C<$!> and C<$?>.
+
+=item $obj-E<gt>B<msgctxt>()
+
+The message context for the translation table lookup.
+
+=item $obj-E<gt>B<msgid>()
+
+Returns the msgid which will later be translated.
+
+=item $obj-E<gt>B<prepend>()
+
+Returns the string which is prepended to this one.  Usually C<undef>.
+
+=item $obj-E<gt>B<tags>()
+
+Returns the LIST of tags which are defined for this message; message
+group indicators, as often found in exception-based programming.
+
+=item $obj-E<gt>B<to>( [$name] )
+
+Returns the C<$name> of a dispatcher if explicitly specified with
+the '_to' key. Can also be used to set it.  Usually, this will
+return C<undef>, because usually all dispatchers get all messages.
+
+=item $obj-E<gt>B<valueOf>($parameter)
+
+Lookup the named C<$parameter> for the message.  All pre-defined names
+have their own method which should be used with preference.
+
+» example: 
+
+When the message was produced with
+
+  my @files = qw/one two three/;
+  my $msg = __xn
+     "found one file: {file}",
+     "found {nrfiles} files: {files}",
+     scalar @files,
+     file    => $files[0],
+     files   => \@files,
+     nrfiles => @files+0,  # or scalar(@files)
+     _tags   => [ 'IO', 'files' ],
+     _join   => ', ';
+
+then the values can be takes from the produced message as
+
+  my $files = $msg->valueOf('files');  # returns ARRAY reference
+  print @$files;                 # 3
+  my $count = $msg->count;       # 3
+  my @tags  = $msg->tags;        # 'IO', 'files'
+  if($msg->taggedWith('files'))  # true
+
+Simplified, the above example can also be written as:
+
+  local $" = ', ';  # Perl default
+  my $msg  = __xn
+     "found one file: {files}",
+     "found {_count} files: {files}",
+     @files,      # has scalar context
+     files   => \@files,
+     _tags   => 'IO, files';
+
+=back
+
+=head2 Processing
+
+=over 4
+
+=item $obj-E<gt>B<concat>( $text|$message, [$prepend] )
+
+This method implements the overloading of concatenation, which is used
+to delay translations even longer.  When C<$prepend> is C<true>, the C<$text>
+or C<$message> (another C<Log::Report::Message>) will be prepended, otherwise
+it is appended in the final display.
+
+» example: of concatenation
+
+  print __"Hello" . ' ' . __"World!\n";
+  print __("Hello")->concat(' ')->concat(__"World!")->concat("\n");
+
+=item $obj-E<gt>B<inClass>($tag|Regexp)
+
+Deprecated alternative for L<taggedWith()|Log::Report::Message/"Processing">.
+
+=item $obj-E<gt>B<taggedWith>($tag|Regexp)
+
+Returns C<true> if the message carries the specified C<$tag> (string) or
+matches the Regexp.  The trueth value is the (first matching) tag.
+
+=item $obj-E<gt>B<toHTML>( [$locale] )
+
+[1.11] Translate the message, and then entity encode HTML volatile characters.
+
+[1.20] When used in combination with a templating system, you may want to
+use C<<content_for => 'HTML'>> in L<Log::Report::Domain::configure(formatter)|Log::Report::Minimal::Domain/"Attributes">.
+
+» example: 
+
+  print $msg->toHTML('NL');
+
+=item $obj-E<gt>B<toString>( [$locale] )
+
+Translate a message.  If not specified, the default locale is used.
+
+=item $obj-E<gt>B<untranslated>()
+
+Return the concatenation of the prepend, msgid, and append strings.  Variable
+expansions within the msgid is not performed.
+
+=back
+
+=head1 DETAILS
+
+The message cast by the L<Log::Report|Log::Report> exception framework can be
+plain strings.  This is sufficient for some cases, for instance:
+which would you bother much about the content of C<trace> messages?
+Message which are destined for end-users or log-files however, need
+more care; require a higher quality.  In this case, you can better
+use cast message objects which support interpolation.
+
+=head2 Message-IDs
+
+An exception message as a string is pretty inflexible.  It cannot
+be translated anymore, and it cannot contain related information
+like an error code.  An exception message as an object (as this
+module implements) is able to contain additional information.
+
+The easiest way to create L<Log::Report::Message|Log::Report::Message> objects, is via the
+C<__x()> (and friends) functions which are exported by L<Log::Report|Log::Report>.
+These are nearly equivalent:
+
+  my $msg = Log::Report::Message->new(_msgid => "Hello, World!");
+  my $msg = __"Hello, World!";
+
+The name C<msgid> is used, because this object can do translations.
+In the GNU gettext library for translations, the term C<msgid> is
+used to describe the string which has to be looked-up in translation
+tables.  When there are no tables, or the C<msgid> is not found,
+then the output string is equivalent to the C<msgid>.
+
+So, without any translation configuration, this happens:
+
+  my $msg = __"Hello, World!";
+  print "$msg\n";      # Hello, World!⏎
+
+The C<__()> function can be used with a static string, although you
+could do this:
+
+  my $msg = __"Hello $name!";      #XXX Don't do this!
+  print "$msg\n";      # Hello Mark!⏎
+
+With the C<__x()> or C<__nx()>, interpolation will take place on the
+(optionally) translated C<msgid> string.  This is how to write above:
+
+  my $msg = __x"Hello {name}!", name => $name;
+
+So: the C<msgid> is usually a I<format string>.  Only when you use
+formats correctly, you will be able to introduce translation later.
+
+=head2 Why use format strings?
+
+Simple perl scripts will use C<print()> with variables in the string.
+However, when the content of the variable gets more unpredictable or
+needs some pre-processing, then it gets tricky.  When you do want to
+introduce translations (in the far future of your successful project)
+it gets impossible.  Let me give you some examples:
+
+  print "product: $name\n";    # simple perl
+
+  # Will not work because "$name" is interpolated too early
+  print translate("product: $name"), "\n";
+
+  # This is the gettext solution, with formats
+  printf translate("product: %s\n"), $name;
+
+  # With named in stead of positional parameters
+  print translate("product: {p}\n", p => $name);
+
+  # With Log::Report, the translate() is hidden in __x()
+  print __x"product: {p}\n", p => $name;
+
+Besides making translation possible, interpolation via format strings
+is much cleaner than in the simpelest perl way.  For instance, these
+cases:
+
+  # Safety measures while interpolation
+  my $name = undef;
+  print "product: $name\n";   # uninitialized warning
+  print __x"product: {p}\n", p => $name;  # --> product: undef
+
+  # Interpolation of more complex data
+  my @names = qw/a b c/;
+  print "products: ", join(', ', @names), "\n";
+  print __x"products: {p}\n", p => \@names;
+
+  # Padded values hard to do without format strings
+  print "padded counter: ", ' ' x (6-length $c), "$c\n";
+  printf "padded counter: %6d\n", $counter;
+  print __x"padded counter: {c%6d}\n", c => $counter;
+
+So: using formats has many advantages.  Advice: use simple perl only in
+C<trace> and C<assert> messages, maybe also with panics.  For serious output
+of your program, use formatted output.
+
+=head2 Messages with plural forms
+
+The L<Log::Report::__xn()|Log::Report/"Messages (optionally translatable)"> message constructor is used when you need
+a different translation based on the count of one of the inserted
+fields.
+
+  fault __x"cannot read {file}", file => $fn;
+  # --> FAULT: cannot read /etc/shadow: Permission denied\n
+
+  print __xn"directory {dir} contains one file",
+            "directory {dir} contains {nr_files} files",
+            scalar(@files),            # (1) (2) (3)
+            nr_files => scalar @files, # (4)
+            dir      => $dir;
+
+(1) this required third parameter is used to switch between the different
+plural forms.  English has only two forms, but some languages have many
+more.
+
+(2) the "scalar" keyword is not needed, because the third parameter is
+in SCALAR context.  You may also pass C< \@files > there, because ARRAYs
+will be converted into their length.  A HASH will be converted into the
+number of keys in the HASH.
+
+(3) you could also simply pass a reference to the ARRAY: it will take
+the length as counter.  With a HASH, it will count the number of keys.
+
+(4) the C<scalar> keyword is required here, because it is LIST context:
+otherwise all filenames will be filled-in as parameters to C<__xn()>.
+See below for the available C<_count> value, to see how the C<nr_files>
+parameter can disappear.
+
+  print __xn"directory {dir} contains one file",
+            "directory {dir} contains {_count} files",
+            \@files, dir => $dir;
+
+Some languages need more than two translations based on the counter.
+This is solved by the translation table definition.  The two msgids
+give here are simply the fallback, when there is not translation table
+active.
+
+=head3 Interpolation with String::Print
+
+There is no way of checking beforehand whether you have provided all
+required values, to be interpolated in the translated string.
+
+This L<Log::Report::Message|Log::Report::Message> uses L<String::Print|String::Print> to handle formatted strings.
+On object of that module is hidden in the logic of C<__x()> and friends.
+
+L<String::Print|String::Print> is a very capable format string processor, and you should
+really B<read its manual> page to see how it can help you.  It would be
+possible to support an other formatter (pretty simple even), but this is
+not (yet) supported.
+
+=head4 » Example: using format features
+
+  # This tries to display the $param as useful and safe as possible,
+  # where you have totally no idea what its contents is.
+  error __x"illegal parameter {p UNKNOWN}.", p => $param;
+  # ---> "illegal parameter 'accidentally passed text'."
+  # ---> "illegal parameter Unexpected::Object::Type."
+
+  # fault() adds ": $!", with $! translated when configured.
+  open my($fh), "<:encoding(utf-8)", $filename
+  	 or fault __x"cannot read {file}", file => $filename;
+
+  # Auto-abbreviation
+  trace __x"first lines: '{text EL}'\n", text => $t;
+  # ---> "first lines: 'This text is long, we sho⋯'.\n"
+
+  trace __x"first lines: {text CHOP}\n", text => $t;
+  # ---> "This text is long, we [+3712 chars]\n"
+
+  info __x"file {file} size {size BYTES}\n", file => $fn, size => -s $fn;
+  # --> "/etc/passwd size 23kB\n"
+
+  # HASH or object values
+  print __x"Name: {user.first} {user.surname}\n", user => $login;
+
+There are more nice standard interpolation modifiers, and you can add
+your own.  Besides, you can add serializers which determine how
+objects are inlined.
+
+=head2 Automatic parameters
+
+Besides the parameters which you specify yourself, L<Log::Report|Log::Report> will add
+a few which can also be interpolated.  The all start with an underscore
+(C<_>).  These are collected when this Message object is instantiated,
+see the C<%options> of L<new()|Log::Report::Message/"Constructors">.  These parameters have a purpose, but
+you are also permitted tp interpolate them in your message.  This may
+simplify your coding.
+
+The useful names are:
+
+=over 4
+
+=item _msgid
+
+The MSGID as provided with L<Log::Report::__()|Log::Report/"Messages (optionally translatable)"> and L<Log::Report::__x()|Log::Report/"Messages (optionally translatable)">
+
+=item _plural, _count
+
+The plural (second) msgid, respectively the counter value as used with
+L<Log::Report::__n()|Log::Report/"Messages (optionally translatable)"> and L<Log::Report::__nx()|Log::Report/"Messages (optionally translatable)">
+
+=item _textdomain
+
+The label of the textdomain in which the translation takes place.
+
+=item _join
+
+The string which is used between elements of an ARRAY, when it gets
+interpolated in a single field.
+
+=item _tags
+
+[1.44] Tags are to be used to group exceptions, and can be queried with L<taggedWith()|Log::Report::Message/"Processing">,
+L<Log::Report::Exception::taggedWith()|Log::Report::Exception/"Processing">, or
+L<Log::Report::Dispatcher::Try::wasFatal(tag)|Log::Report::Dispatcher::Try/"Status">.
+
+=back
+
+=head4 » Example: using the _count
+
+With Locale::TextDomain, you have to do
+
+  use Locale::TextDomain;
+  print __nx(
+     "One file has been deleted.\n",
+     "{num} files have been deleted.\n",
+     $num_files,
+     num => $num_files,
+  );
+
+With C<Log::Report>, you can do
+
+  use Log::Report;
+  print __nx(
+     "One file has been deleted.\n",
+     "{_count} files have been deleted.\n",
+     $num_files,
+  );
+
+Of course, you need to be aware that the name used to reference the
+counter is fixed to C<_count>.  The first example works as well, but
+is more verbose.
+
+=head3 Handling white-spaces
+
+In above examples, the msgid and plural form have a trailing new-line.
+In general, it is much easier to write
+
+  print __x"Hello, World!\n";
+
+than
+
+  print __x("Hello, World!") . "\n";
+
+For the translation tables, however, that trailing new-line is "ignorable
+information"; it is an layout issue, not a translation issue.
+
+Therefore, the first form will automatically be translated into the
+second.  All leading and trailing white-space (blanks, new-lines, tabs,
+...) are removed from the msgid before the look-up, and then added to
+the translated string.
+
+Leading and trailing white-space on the plural form will also be
+removed.  However, after translation the spacing of the msgid will
+be used.
+
+=head3 Avoiding repetative translations
+
+This way of translating is somewhat expensive, because an object to
+handle the C<Log::Report::__x()> is created each time.
+
+  for my $i (1..100_000)
+  {   print __x "Hello World {i}\n", i => $i;
+  }
+
+The suggestion that Locale::TextDomain makes to improve performance,
+is to get the translation outside the loop, which only works without
+interpolation:
+
+  use Locale::TextDomain;
+  my $i = 42;
+  my $s = __x("Hello World {i}\n", i => $i);
+  foreach $i (1..100_000)
+  {   print $s;
+  }
+
+B<Oops,> not what you mean because the first value of C<$i> is captured
+in the initial message object.  With L<Log::Report|Log::Report>, you can do it (except
+when you use contexts)
+
+  use Log::Report;
+  my $i;
+  my $s = __x("Hello World {i}\n", i => \$i);
+  foreach $i (1..100_000)
+  {   print $s;
+  }
+
+Mind you not to write: C<for my $i> in above case!!!!
+
+You can also write an incomplete translation:
+
+  use Log::Report;
+  my $s = __x "Hello World {i}\n";
+  foreach my $i (1..100_000)
+  {   print $s->(i => $i);
+  }
+
+In either case, the translation will be looked-up only once.
+
+=head1 SEE ALSO
+
+This module is part of Log-Report version 1.44,
+built on December 22, 2025. Website: F<http://perl.overmeer.net/CPAN/>
+
+=head1 LICENSE
+
+For contributors see file ChangeLog.
+
+This software is copyright (c) 2007-2025 by Mark Overmeer.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+

@@ -1,0 +1,11 @@
+[Thu Nov 05 10:05:16.014386 2026] [ssl:warn] [pid 12084:tid 388] AH01909: www.example.com:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Nov 05 10:05:16.051309 2026] [ssl:warn] [pid 12084:tid 388] AH01909: www.example.com:443:0 server certificate does NOT include an ID which matches the server name
+PHP Warning:  PHP Startup: Unable to load dynamic library 'curl' (tried: C:\\Users\\my791\\OneDrive\\Desktop\\wordnest\\admin\\php\\ext\\curl (Belirtilen mod\xc3\xbcl bulunamad\xc4\xb1), C:\\Users\\my791\\OneDrive\\Desktop\\wordnest\\admin\\php\\ext\\php_curl.dll (Belirtilen mod\xc3\xbcl bulunamad\xc4\xb1)) in Unknown on line 0
+[Thu Nov 05 10:05:50.784962 2026] [mpm_winnt:notice] [pid 12084:tid 388] AH00455: Apache/2.4.65 (Win64) OpenSSL/3.5.1 PHP/8.5.12 configured -- resuming normal operations
+[Thu Nov 05 10:05:50.784962 2026] [mpm_winnt:notice] [pid 12084:tid 388] AH00456: Apache Lounge VS17 Server built: Jul 24 2025 14:32:29
+[Thu Nov 05 10:05:50.784962 2026] [core:notice] [pid 12084:tid 388] AH00094: Command line: 'c:\\users\\my791\\onedrive\\desktop\\wordnest\\admin\\apache\\bin\\httpd.exe -d C:/Users/my791/OneDrive/Desktop/wordnest/admin/apache'
+[Thu Nov 05 10:05:50.822510 2026] [mpm_winnt:notice] [pid 12084:tid 388] AH00418: Parent: Created child process 23396
+[Thu Nov 05 10:05:51.182187 2026] [ssl:warn] [pid 23396:tid 380] AH01909: www.example.com:443:0 server certificate does NOT include an ID which matches the server name
+[Thu Nov 05 10:05:51.222616 2026] [ssl:warn] [pid 23396:tid 380] AH01909: www.example.com:443:0 server certificate does NOT include an ID which matches the server name
+PHP Warning:  PHP Startup: Unable to load dynamic library 'curl' (tried: C:\\Users\\my791\\OneDrive\\Desktop\\wordnest\\admin\\php\\ext\\curl (Belirtilen mod\xc3\xbcl bulunamad\xc4\xb1), C:\\Users\\my791\\OneDrive\\Desktop\\wordnest\\admin\\php\\ext\\php_curl.dll (Belirtilen mod\xc3\xbcl bulunamad\xc4\xb1)) in Unknown on line 0
+[Thu Nov 05 10:05:51.254766 2026] [mpm_winnt:notice] [pid 23396:tid 380] AH00354: Child: Starting 150 worker threads.

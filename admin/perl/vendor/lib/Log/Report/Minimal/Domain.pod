@@ -1,0 +1,118 @@
+=encoding utf8
+
+=head1 NAME
+
+Log::Report::Minimal::Domain - administer one text-domain
+
+=head1 SYNOPSIS
+
+  use Log::Report::Minimal::Domain;
+  my $domain = Log::Report::Minimal::Domain->new(name => $name);
+
+  # normal usage
+  use Log::Report::Optional;       # or Log::Report itself
+  my $domain = textdomain $name;   # find config
+  textdomain $name, %configure;    # set config, only once.
+
+=head1 DESCRIPTION
+
+Read L<Log::Report::Domain>.
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item $class-E<gt>B<new>(%options)
+
+Z<>
+
+ -Option--Default
+  name    <required>
+
+=over 2
+
+=item name => STRING
+
+The name of the textdomain is used in its invocation, but also as (part of) the
+translation file names, hence please keep it simple and short.
+
+=back
+
+example: textdomain name choice
+
+A good choice is to use Perl's distribution name for the domain name.  For instance,
+the domain name for this module would be set this way:
+
+  use Log::Report 'log-report-optional';
+  use Log::Report 'log-report-opt';
+
+=back
+
+=head2 Attributes
+
+=over 4
+
+=item $obj-E<gt>B<configure>(%options)
+
+Z<>
+
+ -Option--Default
+  where   <required>
+
+=over 2
+
+=item where => ARRAY
+
+Specifies the location of the configuration.  It is not allowed to
+configure a domain on more than one location.
+
+=back
+
+=item $obj-E<gt>B<isConfigured>()
+
+Z<>
+
+=item $obj-E<gt>B<name>()
+
+Z<>
+
+=back
+
+=head2 Translating
+
+=over 4
+
+=item $obj-E<gt>B<interpolate>( $msgid, [$args] )
+
+Interpolate the keys used in C<$msgid> from the values in C<$args>.
+This is handled by the formatter, by default a L<String::Print|String::Print>
+instance.
+
+=back
+
+=head1 DIAGNOSTICS
+
+=over 4
+
+=item Error: illegal formatter `$name' at $fn line $line
+
+Cast by configure()
+
+=back
+
+=head1 SEE ALSO
+
+This module is part of Log-Report-Optional version 1.08,
+built on September 08, 2025. Website: F<http://perl.overmeer.net/CPAN/>
+
+=head1 LICENSE
+
+For contributors see file ChangeLog.
+
+This software is copyright (c) 2013-2025 by Mark Overmeer.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+

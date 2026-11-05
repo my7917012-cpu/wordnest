@@ -1,0 +1,195 @@
+=encoding utf8
+
+=head1 NAME
+
+Log::Report::Exception - a single generated event
+
+=head1 SYNOPSIS
+
+  # created within a try block
+  try { error "help!" };
+  my $exception = $@->wasFatal;
+  $exception->throw if $exception;
+
+  $@->reportFatal;  # combination of above two lines
+
+  my $message = $exception->message;   # the Log::Report::Message
+
+  if($message->taggedWith('die')) ...
+  if($exception->taggedWith('die')) ...   # same
+  if($@->wasFatal(tag => 'die')) ... # same
+
+=head1 DESCRIPTION
+
+In L<Log::Report|Log::Report>, exceptions are not as extended as available in
+languages as Java: you do not create classes for them.  The only
+thing an exception object does, is capture some information about
+an (untranslated) report.
+
+=head1 OVERLOADED
+
+=over 4
+
+=item overload: B<""> stringification
+
+Produces "reason: message" via L<toString()|Log::Report::Exception/"Processing">.
+
+=item overload: B<bool> boolean condition
+
+Always returns C<true>: the exception object exists.
+
+=back
+
+=head1 METHODS
+
+=head2 Constructors
+
+=over 4
+
+=item $class-E<gt>B<new>(%options)
+
+Create a new exception object, which is basically a C<message> which
+was produced for a C<reason>.
+
+ -Option     --Default
+  message      <required>
+  reason       <required>
+  report_opts  +{ }
+
+=over 2
+
+=item message => Log::Report::Message
+
+=item reason => $reason
+
+=item report_opts => \%opts
+
+=back
+
+=back
+
+=head2 Accessors
+
+=over 4
+
+=item $obj-E<gt>B<isFatal>()
+
+Returns whether this exception has a severity which makes it fatal
+when thrown. [1.34] This can have been overruled with the C<is_fatal>
+attribute.  See L<Log::Report::Util::is_fatal()|Log::Report::Util/"Reasons">.
+
+» example: 
+
+  if($ex->isFatal) { $ex->throw(reason => 'ALERT') }
+  else { $ex->throw }
+
+=item $obj-E<gt>B<message>( [$message] )
+
+Change the C<$message> of the exception, must be a L<Log::Report::Message|Log::Report::Message>
+object.
+
+When you use a C<Log::Report::Message> object, you will get a new one
+returned. Therefore, if you want to modify the message in an exception,
+you have to re-assign the result of the modification.
+
+» example: 
+
+  $e->message->concat('!!')); # will not work!
+  $e->message($e->message->concat('!!'));
+
+  $e->message(__x"some message {xyz}", xyz => $xyz);
+
+=item $obj-E<gt>B<reason>( [$reason] )
+
+Z<>
+
+=item $obj-E<gt>B<report_opts>()
+
+Z<>
+
+=back
+
+=head2 Processing
+
+=over 4
+
+=item $obj-E<gt>B<inClass>($tag|Regexp)
+
+Deprecated name for L<taggedWith()|Log::Report::Exception/"Processing">.
+
+=item $obj-E<gt>B<print>( [$fh] )
+
+The default filehandle is STDOUT.
+
+» example: 
+
+  print $exception;  # via overloading
+  $exception->print; # OO style
+
+=item $obj-E<gt>B<taggedWith>($tag|Regexp)
+
+[1.44] Check whether any of the classes listed in the message match C<$tag>
+(string) or the Regexp.  This uses L<Log::Report::Message::taggedWith()|Log::Report::Message/"Processing">.
+
+=item $obj-E<gt>B<throw>(%options)
+
+Insert the message contained in the exception into the currently defined
+dispatchers.  The C<throw> as method name is commonly known exception
+related terminology for C<report>.
+
+The C<%options> overrule the captured options to L<Log::Report::report()|Log::Report/"Report production and configuration">.
+This can be used to overrule a destination.  Also, the reason can
+be changed.
+
+Returned is the LIST of dispatchers which have accepted the forwarded
+exception.
+
+» example: overrule defaults to report
+
+  try { report {to => 'default'}, ERROR => 'oops!' };
+  $@->reportFatal(to => 'syslog');
+
+  my ($syslog) = $exception->throw(to => 'syslog');
+  my @disps = $@->wasFatal->throw(reason => 'WARNING');
+
+=item $obj-E<gt>B<toHTML>( [$locale] )
+
+[1.11] Calls L<toString()|Log::Report::Exception/"Processing"> and then escapes HTML volatile characters.
+
+=item $obj-E<gt>B<toString>( [$locale] )
+
+Prints the reason and the message.  Differently from L<throw()|Log::Report::Exception/"Processing">, this
+only represents the textual content: it does not re-cast the exceptions to
+higher levels.
+
+» example: printing exceptions
+
+  print $_->toString for $@->exceptions;
+  print $_ for $@->exceptions;   # via overloading
+
+=back
+
+=head1 DIAGNOSTICS
+
+=over 4
+
+=item Error: message() of exception expects Log::Report::Message, got $what.
+
+Cast by C<message()>
+
+=back
+
+=head1 SEE ALSO
+
+This module is part of Log-Report version 1.44,
+built on December 22, 2025. Website: F<http://perl.overmeer.net/CPAN/>
+
+=head1 LICENSE
+
+For contributors see file ChangeLog.
+
+This software is copyright (c) 2007-2025 by Mark Overmeer.
+
+This is free software; you can redistribute it and/or modify it under
+the same terms as the Perl 5 programming language system itself.
+

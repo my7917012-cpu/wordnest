@@ -1,0 +1,594 @@
+
+/* GENEL AYARLAR */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #ffffff;
+    color: #292929;
+    line-height: 1.6;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+.container {
+    width: 90%;
+    max-width: 1200px;
+    margin: auto;
+}
+
+/* ÜST MENÜ */
+.ust-menu {
+    width: 100%;
+    background: #ffffff;
+    border-bottom: 1px solid #f1f1f1;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.menu-icerik {
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 25px;
+}
+
+.logo {
+    font-size: 30px;
+    font-weight: 800;
+    color: #292929;
+    letter-spacing: -1px;
+}
+
+.logo span {
+    color: #f07824;
+}
+
+.ana-menu {
+    display: flex;
+    align-items: center;
+    gap: 35px;
+}
+
+.ana-menu a {
+    font-size: 15px;
+    font-weight: 600;
+    color: #555555;
+    transition: 0.3s;
+}
+
+.ana-menu a:hover,
+.ana-menu a.aktif {
+    color: #f07824;
+}
+
+.menu-butonlar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.giris-buton {
+    padding: 10px 20px;
+    color: #f07824;
+    font-weight: 700;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.giris-buton:hover {
+    background: #fff2e8;
+}
+
+.kayit-buton {
+    padding: 11px 22px;
+    background: #f07824;
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 8px;
+    transition: 0.3s;
+}
+
+.kayit-buton:hover,
+.ana-buton:hover {
+    background: #d96313;
+    transform: translateY(-2px);
+}
+
+/* ANA KARŞILAMA ALANI */
+.hero {
+    background: linear-gradient(120deg, #fff5ec, #ffffff);
+    padding: 85px 0;
+    overflow: hidden;
+}
+
+.hero-icerik {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 50px;
+}
+
+.hero-yazi {
+    flex: 1;
+}
+
+.hero-etiket,
+.ust-baslik {
+    display: inline-block;
+    color: #f07824;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+}
+
+.hero-yazi h1 {
+    font-size: 58px;
+    line-height: 1.15;
+    font-weight: 800;
+    color: #292929;
+    margin-bottom: 22px;
+}
+
+.hero-yazi h1 span {
+    color: #f07824;
+}
+
+.hero-yazi p {
+    max-width: 530px;
+    color: #777777;
+    font-size: 17px;
+    margin-bottom: 30px;
+}
+
+.hero-butonlar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.ana-buton {
+    display: inline-block;
+    background: #f07824;
+    color: #ffffff;
+    padding: 14px 25px;
+    border-radius: 9px;
+    font-weight: 700;
+    transition: 0.3s;
+}
+
+.ikincil-buton {
+    display: inline-block;
+    padding: 13px 25px;
+    border: 2px solid #f07824;
+    color: #f07824;
+    border-radius: 9px;
+    font-weight: 700;
+    transition: 0.3s;
+}
+
+.ikincil-buton:hover {
+    background: #fff0e4;
+}
+
+/* HERO GÖRSELİ */
+.hero-gorsel {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.kitap-kart {
+    width: 350px;
+    height: 390px;
+    background: linear-gradient(145deg, #f07824, #ffad66);
+    border-radius: 25px;
+    padding: 40px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-shadow: 0 25px 55px rgba(240, 120, 36, 0.2);
+    transform: rotate(3deg);
+}
+
+.kitap-emoji {
+    font-size: 75px;
+    margin-bottom: 20px;
+}
+
+.kitap-kart h3 {
+    font-size: 35px;
+    line-height: 1.2;
+}
+
+.kitap-kart p {
+    margin-top: 18px;
+    font-size: 15px;
+    opacity: 0.9;
+}
+
+/* BÖLÜMLER */
+.kategori-bolumu,
+.hikaye-bolumu {
+    padding: 75px 0;
+}
+
+.bolum-baslik {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+.bolum-baslik h2 {
+    font-size: 32px;
+    color: #292929;
+    font-weight: 800;
+}
+
+.tumunu-gor {
+    color: #f07824;
+    font-weight: 700;
+    transition: 0.3s;
+}
+
+.tumunu-gor:hover {
+    color: #d96313;
+}
+
+/* KATEGORİLER */
+.kategori-listesi {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+}
+
+.kategori-karti {
+    background: #fff8f2;
+    border: 1px solid #ffeadb;
+    border-radius: 13px;
+    padding: 25px 15px;
+    text-align: center;
+    transition: 0.3s;
+}
+
+.kategori-karti:hover {
+    transform: translateY(-5px);
+    border-color: #f07824;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+
+.kategori-karti span {
+    font-size: 35px;
+}
+
+.kategori-karti h3 {
+    margin-top: 10px;
+    font-size: 17px;
+    color: #333333;
+}
+
+/* HİKAYELER */
+.hikaye-bolumu {
+    background: #fafafa;
+}
+
+.yeni-hikayeler {
+    background: #ffffff;
+}
+
+.hikaye-listesi {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 25px;
+}
+
+.hikaye-karti {
+    display: block;
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: 0.3s;
+}
+
+.hikaye-karti:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+.hikaye-kapak {
+    width: 100%;
+    height: 230px;
+    background: #fff0e4;
+    overflow: hidden;
+}
+
+.hikaye-kapak img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: 0.4s;
+}
+
+.hikaye-karti:hover .hikaye-kapak img {
+    transform: scale(1.05);
+}
+
+.kapak-yok {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 65px;
+    color: #f07824;
+}
+
+.hikaye-bilgi {
+    padding: 18px;
+}
+
+.hikaye-kategori {
+    display: inline-block;
+    color: #f07824;
+    background: #fff0e4;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.hikaye-bilgi h3 {
+    font-size: 18px;
+    color: #292929;
+    margin-bottom: 8px;
+}
+
+.hikaye-bilgi p {
+    font-size: 13px;
+    color: #777777;
+    min-height: 42px;
+}
+
+.hikaye-yazar {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #eeeeee;
+    color: #777777;
+    font-size: 13px;
+}
+
+.bos-mesaj {
+    color: #888888;
+    padding: 20px 0;
+}
+
+/* YAZAR ÇAĞRISI */
+.yazar-cagrisi {
+    background: #fff1e6;
+    padding: 65px 0;
+}
+
+.yazar-icerik {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 30px;
+}
+
+.yazar-icerik span {
+    color: #f07824;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+}
+
+.yazar-icerik h2 {
+    font-size: 30px;
+    margin: 8px 0;
+    color: #292929;
+}
+
+.yazar-icerik p {
+    color: #777777;
+}
+
+/* ALT BİLGİ */
+.alt-bilgi {
+    background: #292929;
+    padding: 35px 0;
+    color: #ffffff;
+}
+
+.footer-icerik {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+
+.alt-bilgi .logo {
+    color: #ffffff;
+}
+
+.alt-bilgi p {
+    color: #cccccc;
+    font-size: 13px;
+}
+
+.telif {
+    text-align: right;
+}
+
+/* TABLET */
+@media (max-width: 900px) {
+    .hero-yazi h1 {
+        font-size: 45px;
+    }
+
+    .kategori-listesi {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .hikaye-listesi {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .ana-menu {
+        gap: 15px;
+    }
+
+    .hero-icerik {
+        gap: 25px;
+    }
+}
+
+/* TELEFON */
+@media (max-width: 600px) {
+    .menu-icerik {
+        flex-wrap: wrap;
+        padding: 15px 0;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    .logo {
+        font-size: 27px;
+    }
+
+    .ana-menu {
+        order: 3;
+        width: 100%;
+        justify-content: center;
+        gap: 25px;
+    }
+
+    .ana-menu a {
+        font-size: 13px;
+    }
+
+    .menu-butonlar {
+        gap: 5px;
+    }
+
+    .giris-buton,
+    .kayit-buton {
+        padding: 9px 13px;
+        font-size: 13px;
+    }
+
+    .hero {
+        padding: 55px 0;
+    }
+
+    .hero-icerik {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .hero-yazi h1 {
+        font-size: 39px;
+    }
+
+    .hero-yazi p {
+        font-size: 15px;
+    }
+
+    .hero-butonlar {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .kitap-kart {
+        width: 260px;
+        height: 290px;
+        padding: 30px;
+    }
+
+    .kitap-emoji {
+        font-size: 55px;
+    }
+
+    .kitap-kart h3 {
+        font-size: 27px;
+    }
+
+    .kategori-bolumu,
+    .hikaye-bolumu {
+        padding: 50px 0;
+    }
+
+    .bolum-baslik h2 {
+        font-size: 25px;
+    }
+
+    .kategori-listesi {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+    }
+
+    .kategori-karti {
+        padding: 18px 10px;
+    }
+
+    .kategori-karti h3 {
+        font-size: 14px;
+    }
+
+    .hikaye-listesi {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .hikaye-kapak {
+        height: 160px;
+    }
+
+    .hikaye-bilgi {
+        padding: 12px;
+    }
+
+    .hikaye-bilgi h3 {
+        font-size: 15px;
+    }
+
+    .hikaye-bilgi p {
+        font-size: 12px;
+    }
+
+    .yazar-icerik {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .yazar-icerik h2 {
+        font-size: 25px;
+    }
+
+    .footer-icerik {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .telif {
+        text-align: center;
+    }
+}
