@@ -298,6 +298,13 @@ footer {
                 </span>
             </a>
 
+            <a href="hikayeler.php" class="management-item">
+                <strong>📚 Hikâye Yönetimi</strong>
+                <span>
+                    Platformdaki hikâyeleri görüntüle ve yayın durumlarını yönet.
+                </span>
+            </a>
+
         </div>
     </section>
 
