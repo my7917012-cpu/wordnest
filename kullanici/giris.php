@@ -63,12 +63,51 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         body {
             margin: 0;
             min-height: 100vh;
+            background: #fff8f2;
+            font-family: Arial, sans-serif;
+        }
+
+        .ust-menu {
+            background: #ff6b00;
+            padding: 18px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .ust-menu h2 {
+            color: white;
+            margin: 0;
+        }
+
+        .header-buton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 9px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            border: 2px solid white;
+            background: white;
+            color: #e85d00;
+            transition: .2s ease;
+        }
+
+        .header-buton:hover {
+            background: #fff0e5;
+            transform: translateY(-2px);
+        }
+
+        .giris-alan {
+            min-height: calc(100vh - 75px);
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #fff8f2;
-            font-family: Arial, sans-serif;
-            padding: 20px;
+            padding: 30px 20px;
         }
 
         .giris-kutu {
@@ -156,67 +195,81 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             text-decoration: none;
         }
 
-        .ana-sayfa {
-            display: block;
-            text-align: center;
-            margin-top: 20px;
-            color: #777;
-            text-decoration: none;
-            font-size: 14px;
+        @media(max-width: 600px) {
+            .ust-menu {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-buton {
+                width: 100%;
+            }
+
+            .giris-kutu {
+                padding: 30px 22px;
+            }
         }
     </style>
 </head>
 
 <body>
 
-<div class="giris-kutu">
+<header class="ust-menu">
+    <h2>📚 WordNest</h2>
 
-    <div class="logo">WordNest</div>
-
-    <p class="alt-baslik">Hikâyelerin dünyasına hoş geldin!</p>
-
-    <?php if (!empty($hata)): ?>
-        <div class="hata">
-            <?= htmlspecialchars($hata, ENT_QUOTES, "UTF-8") ?>
-        </div>
-    <?php endif; ?>
-
-    <form method="POST">
-
-        <div class="form-grup">
-            <label>E-posta veya Kullanıcı Adı</label>
-            <input
-                type="text"
-                name="kullanici"
-                placeholder="E-posta veya kullanıcı adınız"
-                required
-            >
-        </div>
-
-        <div class="form-grup">
-            <label>Şifre</label>
-            <input
-                type="password"
-                name="sifre"
-                placeholder="Şifrenizi girin"
-                required
-            >
-        </div>
-
-        <button type="submit" class="giris-btn">
-            Giriş Yap
-        </button>
-
-    </form>
-
-    <div class="kayit-link">
-        Hesabın yok mu?
-        <a href="kayit.php">Hemen kayıt ol</a>
-    </div>
-
-    <a href="../index.php" class="ana-sayfa">
-        ← Ana sayfaya dön
+    <a href="../index.php" class="header-buton">
+        🏠 Ana Sayfaya Dön
     </a>
+</header>
+
+<div class="giris-alan">
+
+    <div class="giris-kutu">
+
+        <div class="logo">WordNest</div>
+
+        <p class="alt-baslik">Hikâyelerin dünyasına hoş geldin!</p>
+
+        <?php if (!empty($hata)): ?>
+            <div class="hata">
+                <?= htmlspecialchars($hata, ENT_QUOTES, "UTF-8") ?>
+            </div>
+        <?php endif; ?>
+
+        <form method="POST">
+
+            <div class="form-grup">
+                <label>E-posta veya Kullanıcı Adı</label>
+                <input
+                    type="text"
+                    name="kullanici"
+                    placeholder="E-posta veya kullanıcı adınız"
+                    required
+                >
+            </div>
+
+            <div class="form-grup">
+                <label>Şifre</label>
+                <input
+                    type="password"
+                    name="sifre"
+                    placeholder="Şifrenizi girin"
+                    required
+                >
+            </div>
+
+            <button type="submit" class="giris-btn">
+                Giriş Yap
+            </button>
+
+        </form>
+
+        <div class="kayit-link">
+            Hesabın yok mu?
+            <a href="kayit.php">Hemen kayıt ol</a>
+        </div>
+
+    </div>
 
 </div>
 

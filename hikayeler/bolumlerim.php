@@ -18,7 +18,6 @@ if (!$hikaye_id || $hikaye_id < 1) {
     exit;
 }
 
-// Hikayenin kullanıcıya ait olduğunu kontrol et
 $sorgu = $db->prepare("
     SELECT id, baslik
     FROM hikayeler
@@ -32,7 +31,6 @@ if (!$hikaye) {
     exit;
 }
 
-// CSRF token
 if (empty($_SESSION["csrf_token"])) {
     $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
 }
@@ -52,7 +50,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["islem"] ?? "") === "sil") 
         try {
             $db->beginTransaction();
 
-            // Bölümün bu hikayeye ait olduğunu doğrula
             $kontrol = $db->prepare("
                 SELECT b.id
                 FROM bolumler b
@@ -164,10 +161,46 @@ $bolumler = $bolumSorgu->fetchAll();
             font-size: 25px;
         }
 
-        header a {
-            color: white;
+        .header-butonlar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header-buton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 9px;
             text-decoration: none;
+            font-size: 14px;
             font-weight: bold;
+            border: 2px solid white;
+            transition: 0.2s ease;
+        }
+
+        /* Ana sayfaya dönüş butonu */
+        .ana-sayfa-buton {
+            background: white;
+            color: #e85d00;
+        }
+
+        .ana-sayfa-buton:hover {
+            background: #fff0e5;
+            transform: translateY(-2px);
+        }
+
+        /* Hikâyelerime dönüş butonu */
+        .hikayeler-buton {
+            background: #e85d00;
+            color: white;
+        }
+
+        .hikayeler-buton:hover {
+            background: #c94f00;
+            transform: translateY(-2px);
         }
 
         .container {
@@ -324,6 +357,20 @@ $bolumler = $bolumSorgu->fetchAll();
         }
 
         @media(max-width: 600px) {
+            header {
+                padding: 18px 20px;
+            }
+
+            .header-butonlar {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .header-buton {
+                width: 100%;
+                text-align: center;
+            }
+
             .bolum-karti {
                 align-items: flex-start;
                 flex-direction: column;
@@ -340,7 +387,16 @@ $bolumler = $bolumSorgu->fetchAll();
 
 <header>
     <h2>📚 WordNest</h2>
-    <a href="hikayelerim.php">Hikâyelerime Dön</a>
+
+    <div class="header-butonlar">
+        <a href="../index.php" class="header-buton ana-sayfa-buton">
+            🏠 Ana Sayfaya Dön
+        </a>
+
+        <a href="hikayelerim.php" class="header-buton hikayeler-buton">
+            📖 Hikâyelerime Dön
+        </a>
+    </div>
 </header>
 
 <div class="container">

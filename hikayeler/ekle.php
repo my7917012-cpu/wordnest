@@ -173,13 +173,69 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         body {
+            margin: 0;
             background: #fff8f2;
             font-family: Arial, sans-serif;
         }
 
+        .ust-menu {
+            background: #ff6b00;
+            padding: 18px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .ust-menu h2 {
+            color: white;
+            margin: 0;
+        }
+
+        .header-butonlar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header-buton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 9px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            border: 2px solid white;
+            transition: .2s ease;
+        }
+
+        .ana-sayfa-buton {
+            background: white;
+            color: #e85d00;
+        }
+
+        .ana-sayfa-buton:hover {
+            background: #fff0e5;
+            transform: translateY(-2px);
+        }
+
+        .hikayeler-buton {
+            background: #e85d00;
+            color: white;
+        }
+
+        .hikayeler-buton:hover {
+            background: #c94f00;
+            transform: translateY(-2px);
+        }
+
         .form-sayfa {
             max-width: 750px;
-            margin: 55px auto;
+            margin: 45px auto;
             padding: 20px;
         }
 
@@ -277,15 +333,25 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             color: #237a38;
         }
 
-        .geri-link {
-            display: inline-block;
-            margin-top: 22px;
-            color: #f47b20;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
         @media(max-width: 600px) {
+            .ust-menu {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-butonlar {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .header-buton {
+                width: 100%;
+            }
+
+            .form-sayfa {
+                margin: 25px auto;
+            }
+
             .form-kutu {
                 padding: 23px 18px;
             }
@@ -298,6 +364,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 </head>
 
 <body>
+
+<header class="ust-menu">
+    <h2>📚 WordNest</h2>
+
+    <div class="header-butonlar">
+        <a href="../index.php" class="header-buton ana-sayfa-buton">
+            🏠 Ana Sayfaya Dön
+        </a>
+
+        <a href="hikayelerim.php" class="header-buton hikayeler-buton">
+            📖 Hikâyelerime Dön
+        </a>
+    </div>
+</header>
 
 <div class="form-sayfa">
 
@@ -388,10 +468,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             </button>
 
         </form>
-
-        <a href="../index.php" class="geri-link">
-            ← Ana sayfaya dön
-        </a>
 
     </div>
 

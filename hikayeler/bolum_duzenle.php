@@ -18,7 +18,6 @@ if (!$bolum_id || $bolum_id < 1) {
     exit;
 }
 
-// Bölümün kullanıcıya ait olup olmadığını kontrol et
 $sorgu = $db->prepare("
     SELECT
         b.id,
@@ -128,10 +127,44 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-size: 25px;
         }
 
-        header a {
-            color: white;
+        .header-butonlar {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .header-buton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 9px;
             text-decoration: none;
+            font-size: 14px;
             font-weight: bold;
+            border: 2px solid white;
+            transition: 0.2s ease;
+        }
+
+        .ana-sayfa-buton {
+            background: white;
+            color: #e85d00;
+        }
+
+        .ana-sayfa-buton:hover {
+            background: #fff0e5;
+            transform: translateY(-2px);
+        }
+
+        .bolumler-buton {
+            background: #e85d00;
+            color: white;
+        }
+
+        .bolumler-buton:hover {
+            background: #c94f00;
+            transform: translateY(-2px);
         }
 
         .container {
@@ -203,18 +236,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-size: 15px;
             font-weight: bold;
             cursor: pointer;
+            text-align: center;
+            transition: 0.2s ease;
         }
 
         .buton:hover {
             background: #e85d00;
-        }
-
-        .geri {
-            background: #777;
-        }
-
-        .geri:hover {
-            background: #555;
+            transform: translateY(-2px);
         }
 
         .mesaj {
@@ -234,6 +262,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         @media(max-width: 600px) {
+            header {
+                padding: 18px 20px;
+            }
+
+            .header-butonlar {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .header-butonlar a {
+                width: 100%;
+                text-align: center;
+            }
+
             .form-karti {
                 padding: 20px;
             }
@@ -242,10 +284,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 min-height: 280px;
             }
 
-            .butonlar a,
             .butonlar button {
                 width: 100%;
-                text-align: center;
             }
         }
     </style>
@@ -255,9 +295,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <header>
     <h2>📚 WordNest</h2>
-    <a href="bolumlerim.php?hikaye_id=<?php echo (int)$bolum["hikaye_id"]; ?>">
-        Bölümlerime Dön
-    </a>
+
+    <div class="header-butonlar">
+
+        <a href="../index.php" class="header-buton ana-sayfa-buton">
+            🏠 Ana Sayfaya Dön
+        </a>
+
+        <a
+            href="bolumlerim.php?hikaye_id=<?php echo (int)$bolum["hikaye_id"]; ?>"
+            class="header-buton bolumler-buton"
+        >
+            📖 Bölümlerime Dön
+        </a>
+
+    </div>
 </header>
 
 <div class="container">
@@ -317,13 +369,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <button type="submit" class="buton">
                     Değişiklikleri Kaydet
                 </button>
-
-                <a
-                    href="bolumlerim.php?hikaye_id=<?php echo (int)$bolum["hikaye_id"]; ?>"
-                    class="buton geri"
-                >
-                    Geri Dön
-                </a>
 
             </div>
 

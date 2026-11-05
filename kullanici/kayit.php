@@ -78,11 +78,52 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <link rel="stylesheet" href="../assets/css/style.css">
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
+            margin: 0;
             background: #fff5ec;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            font-family: Arial, sans-serif;
+        }
+
+        .ust-menu {
+            background: #ff6b00;
+            padding: 18px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .ust-menu h2 {
+            color: white;
+            margin: 0;
+        }
+
+        .header-buton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 9px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            border: 2px solid white;
+            background: white;
+            color: #e85d00;
+            transition: .2s ease;
+        }
+
+        .header-buton:hover {
+            background: #fff0e5;
+            transform: translateY(-2px);
         }
 
         .kayit-alani {
@@ -180,9 +221,19 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         .alt-link a {
             color: #f07824;
             font-weight: bold;
+            text-decoration: none;
         }
 
         @media (max-width: 500px) {
+            .ust-menu {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .header-buton {
+                width: 100%;
+            }
+
             .kayit-kutu {
                 padding: 25px 20px;
             }
@@ -193,15 +244,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <body>
 
 <header class="ust-menu">
-    <div class="container menu-icerik">
-        <a href="../index.php" class="logo">
-            <span>Word</span>Nest
-        </a>
 
-        <a href="../index.php" class="giris-buton">
-            Ana Sayfaya Dön
-        </a>
-    </div>
+    <h2>📚 WordNest</h2>
+
+    <a href="../index.php" class="header-buton">
+        🏠 Ana Sayfaya Dön
+    </a>
+
 </header>
 
 <main class="kayit-alani">
@@ -211,18 +260,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         <h1>Word<span style="color:#f07824;">Nest</span></h1>
 
         <p class="aciklama">
-            Aramıza katıl, hikayelerin dünyasını keşfet!
+            Aramıza katıl, hikâyelerin dünyasını keşfet!
         </p>
 
         <?php if (!empty($hata)): ?>
             <div class="mesaj hata">
-                <?php echo htmlspecialchars($hata); ?>
+                <?php echo htmlspecialchars($hata, ENT_QUOTES, "UTF-8"); ?>
             </div>
         <?php endif; ?>
 
         <?php if (!empty($basari)): ?>
             <div class="mesaj basari">
-                <?php echo htmlspecialchars($basari); ?>
+                <?php echo htmlspecialchars($basari, ENT_QUOTES, "UTF-8"); ?>
             </div>
         <?php endif; ?>
 
@@ -234,7 +283,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     type="text"
                     name="ad_soyad"
                     placeholder="Adınızı ve soyadınızı girin"
-                    value="<?php echo htmlspecialchars($_POST['ad_soyad'] ?? ''); ?>"
+                    value="<?php echo htmlspecialchars($_POST['ad_soyad'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                     required
                 >
             </div>
@@ -245,7 +294,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     type="text"
                     name="kullanici_adi"
                     placeholder="Bir kullanıcı adı belirleyin"
-                    value="<?php echo htmlspecialchars($_POST['kullanici_adi'] ?? ''); ?>"
+                    value="<?php echo htmlspecialchars($_POST['kullanici_adi'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                     required
                 >
             </div>
@@ -256,7 +305,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     type="email"
                     name="email"
                     placeholder="ornek@mail.com"
-                    value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>"
+                    value="<?php echo htmlspecialchars($_POST['email'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"
                     required
                 >
             </div>

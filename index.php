@@ -8,6 +8,23 @@ require_once __DIR__ . "/config/baglanti.php";
 $girisYapildi = isset($_SESSION["kullanici_id"]);
 $kullaniciAdi = $_SESSION["kullanici_adi"] ?? "";
 
+// Admin kontrolü
+$adminMi = $girisYapildi && ($_SESSION["rol"] ?? "") === "admin";
+
+// Kategori emojileri
+$kategoriEmojileri = [
+    "Macera" => "🗺️",
+    "Romantik" => "❤️",
+    "Bilim Kurgu" => "🚀",
+    "Gizem" => "🔍",
+    "Fantastik" => "🧙",
+    "Polisiye" => "🕵️",
+    "Korku" => "👻",
+    "Dram" => "🎭",
+    "Komedi" => "😂",
+    "Tarih" => "🏛️"
+];
+
 // Kategorileri getir
 $kategoriSorgu = $db->query("
     SELECT * FROM kategoriler
@@ -51,9 +68,116 @@ $populerHikayeler = $populerSorgu->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>WordNest - Hikayelerin Dünyası</title>
+
     <link rel="stylesheet" href="assets/css/style.css">
+
+    <style>
+        /* ÜST MENÜ ADMIN BUTONU */
+
+        .admin-panel-buton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #fff0e5;
+            color: #e85d00 !important;
+            padding: 10px 14px;
+            border: 2px solid #ff6b00;
+            border-radius: 9px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: .2s ease;
+        }
+
+        .admin-panel-buton:hover {
+            background: #e85d00;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+
+        /* KATEGORİ ALANI */
+
+        .kategori-baslik-alani {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        .kategori-listesi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+        }
+
+        .kategori-karti {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            min-height: 155px;
+            padding: 23px;
+            background: white;
+            border: 1px solid #f2e6dc;
+            border-radius: 15px;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 4px 14px rgba(0,0,0,.04);
+            transition: .25s ease;
+        }
+
+        .kategori-karti:hover {
+            transform: translateY(-6px);
+            border-color: #ff6b00;
+            box-shadow: 0 9px 22px rgba(255,107,0,.12);
+        }
+
+        .kategori-emoji {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 53px;
+            height: 53px;
+            background: #fff0e5;
+            border-radius: 13px;
+            font-size: 27px;
+            margin-bottom: 14px;
+        }
+
+        .kategori-karti h3 {
+            color: #e85d00;
+            font-size: 18px;
+            margin-bottom: 7px;
+        }
+
+        .kategori-karti p {
+            color: #777;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        @media(max-width: 600px) {
+            .kategori-baslik-alani {
+                align-items: stretch;
+                flex-direction: column;
+            }
+
+            .kategori-listesi {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 12px;
+            }
+
+            .kategori-karti {
+                min-height: 145px;
+                padding: 15px;
+            }
+        }
+    </style>
 </head>
+
 <body>
 
 <header class="ust-menu">
@@ -80,6 +204,12 @@ $populerHikayeler = $populerSorgu->fetchAll();
                 <span class="hosgeldin">
                     Merhaba, <?= htmlspecialchars($kullaniciAdi, ENT_QUOTES, "UTF-8") ?>
                 </span>
+
+                <?php if ($adminMi): ?>
+                    <a href="admin/panel.php" class="admin-panel-buton">
+                        ⚙️ Yönetim Paneli
+                    </a>
+                <?php endif; ?>
 
                 <a href="kullanici/cikis.php" class="giris-buton">
                     Çıkış Yap
@@ -121,11 +251,13 @@ $populerHikayeler = $populerSorgu->fetchAll();
                 </p>
 
                 <div class="hero-butonlar">
+
                     <a href="hikayeler/liste.php" class="ana-buton">
                         Hikayeleri Keşfet
                     </a>
 
                     <?php if ($girisYapildi): ?>
+
                         <a href="hikayeler/ekle.php" class="ikincil-buton">
                             Hikaye Yaz
                         </a>
@@ -133,11 +265,15 @@ $populerHikayeler = $populerSorgu->fetchAll();
                         <a href="hikayeler/hikayelerim.php" class="ikincil-buton">
                             Hikâyelerim
                         </a>
+
                     <?php else: ?>
+
                         <a href="kullanici/kayit.php" class="ikincil-buton">
                             Yazar Ol
                         </a>
+
                     <?php endif; ?>
+
                 </div>
             </div>
 
@@ -154,14 +290,20 @@ $populerHikayeler = $populerSorgu->fetchAll();
         </div>
     </section>
 
+    <!-- KATEGORİLER -->
+
     <section class="kategori-bolumu" id="kategoriler">
         <div class="container">
 
-            <div class="bolum-baslik">
-                <div>
-                    <span class="ust-baslik">KEŞFET</span>
-                    <h2>Kategoriler</h2>
+            <div class="kategori-baslik-alani">
+
+                <div class="bolum-baslik">
+                    <div>
+                        <span class="ust-baslik">KEŞFET</span>
+                        <h2>Kategoriler</h2>
+                    </div>
                 </div>
+
             </div>
 
             <div class="kategori-listesi">
@@ -170,14 +312,29 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
                     <?php foreach ($kategoriler as $kategori): ?>
 
+                        <?php
+                        $kategoriAdi = $kategori["kategori_adi"];
+                        $emoji = $kategoriEmojileri[$kategoriAdi] ?? "📖";
+                        ?>
+
                         <a href="hikayeler/liste.php?kategori=<?= (int)$kategori['id'] ?>"
                            class="kategori-karti">
 
-                            <span>📖</span>
+                            <span class="kategori-emoji">
+                                <?= $emoji ?>
+                            </span>
 
                             <h3>
-                                <?= htmlspecialchars($kategori['kategori_adi'], ENT_QUOTES, "UTF-8") ?>
+                                <?= htmlspecialchars($kategoriAdi, ENT_QUOTES, "UTF-8") ?>
                             </h3>
+
+                            <p>
+                                <?= htmlspecialchars(
+                                    $kategori["aciklama"] ?? "Bu kategorideki hikâyeleri keşfet.",
+                                    ENT_QUOTES,
+                                    "UTF-8"
+                                ) ?>
+                            </p>
 
                         </a>
 
@@ -193,6 +350,8 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
         </div>
     </section>
+
+    <!-- POPÜLER HİKÂYELER -->
 
     <section class="hikaye-bolumu">
         <div class="container">
@@ -220,16 +379,12 @@ $populerHikayeler = $populerSorgu->fetchAll();
                             <div class="hikaye-kapak">
 
                                 <?php if (!empty($hikaye['kapak_resmi'])): ?>
-
                                     <img
                                         src="<?= htmlspecialchars($hikaye['kapak_resmi'], ENT_QUOTES, "UTF-8") ?>"
                                         alt="<?= htmlspecialchars($hikaye['baslik'], ENT_QUOTES, "UTF-8") ?>"
                                     >
-
                                 <?php else: ?>
-
                                     <div class="kapak-yok">📖</div>
-
                                 <?php endif; ?>
 
                             </div>
@@ -273,6 +428,8 @@ $populerHikayeler = $populerSorgu->fetchAll();
         </div>
     </section>
 
+    <!-- SON EKLENEN HİKÂYELER -->
+
     <section class="hikaye-bolumu yeni-hikayeler">
         <div class="container">
 
@@ -295,16 +452,12 @@ $populerHikayeler = $populerSorgu->fetchAll();
                             <div class="hikaye-kapak">
 
                                 <?php if (!empty($hikaye['kapak_resmi'])): ?>
-
                                     <img
                                         src="<?= htmlspecialchars($hikaye['kapak_resmi'], ENT_QUOTES, "UTF-8") ?>"
                                         alt="<?= htmlspecialchars($hikaye['baslik'], ENT_QUOTES, "UTF-8") ?>"
                                     >
-
                                 <?php else: ?>
-
                                     <div class="kapak-yok">📚</div>
-
                                 <?php endif; ?>
 
                             </div>
@@ -348,12 +501,16 @@ $populerHikayeler = $populerSorgu->fetchAll();
         </div>
     </section>
 
+    <!-- YAZAR ÇAĞRISI -->
+
     <section class="yazar-cagrisi">
         <div class="container yazar-icerik">
 
             <div>
                 <span>YAZARLIĞA İLK ADIMINI AT</span>
+
                 <h2>Kendi hikayeni yazmaya hazır mısın?</h2>
+
                 <p>
                     Hayal gücünü kelimelere dök, hikayeni WordNest
                     topluluğuyla paylaş.

@@ -91,7 +91,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                     $db->rollBack();
                 }
 
-                // Gerçek veritabanı hatasını geçici olarak gösteriyoruz.
                 $hata = "Veritabanı hatası: " . $e->getMessage();
             }
         }
@@ -135,10 +134,44 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-size: 25px;
         }
 
-        header a {
-            color: white;
+        .header-butonlar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header-buton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 9px;
             text-decoration: none;
+            font-size: 14px;
             font-weight: bold;
+            border: 2px solid white;
+            transition: 0.2s ease;
+        }
+
+        .ana-sayfa-buton {
+            background: white;
+            color: #e85d00;
+        }
+
+        .ana-sayfa-buton:hover {
+            background: #fff0e5;
+            transform: translateY(-2px);
+        }
+
+        .hikayeler-buton {
+            background: #e85d00;
+            color: white;
+        }
+
+        .hikayeler-buton:hover {
+            background: #c94f00;
+            transform: translateY(-2px);
         }
 
         .container {
@@ -210,18 +243,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             font-size: 15px;
             font-weight: bold;
             cursor: pointer;
+            transition: 0.2s ease;
         }
 
         .buton:hover {
             background: #e85d00;
-        }
-
-        .geri {
-            background: #777;
-        }
-
-        .geri:hover {
-            background: #555;
+            transform: translateY(-2px);
         }
 
         .mesaj {
@@ -242,6 +269,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         @media(max-width: 600px) {
+            header {
+                padding: 18px 20px;
+            }
+
+            .header-butonlar {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .header-buton {
+                width: 100%;
+                text-align: center;
+            }
+
             .form-karti {
                 padding: 20px;
             }
@@ -250,7 +291,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 min-height: 280px;
             }
 
-            .butonlar a, .butonlar button {
+            .butonlar button {
                 width: 100%;
                 text-align: center;
             }
@@ -262,7 +303,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 <header>
     <h2>📚 WordNest</h2>
-    <a href="hikayelerim.php">Hikâyelerime Dön</a>
+
+    <div class="header-butonlar">
+
+        <a href="../index.php" class="header-buton ana-sayfa-buton">
+            🏠 Ana Sayfaya Dön
+        </a>
+
+        <a href="hikayelerim.php" class="header-buton hikayeler-buton">
+            📖 Hikâyelerime Dön
+        </a>
+
+    </div>
 </header>
 
 <div class="container">
@@ -324,10 +376,6 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 <button type="submit" class="buton">
                     Bölümü Kaydet
                 </button>
-
-                <a href="hikayelerim.php" class="buton geri">
-                    Hikâyelerime Dön
-                </a>
 
             </div>
 
