@@ -1,6 +1,12 @@
 
 <?php
+session_start();
+
 require_once __DIR__ . "/config/baglanti.php";
+
+// Kullanıcı giriş kontrolü
+$girisYapildi = isset($_SESSION["kullanici_id"]);
+$kullaniciAdi = $_SESSION["kullanici_adi"] ?? "";
 
 // Kategorileri getir
 $kategoriSorgu = $db->query("
@@ -11,7 +17,7 @@ $kategoriler = $kategoriSorgu->fetchAll();
 
 // Son eklenen hikayeleri getir
 $yeniSorgu = $db->query("
-    SELECT 
+    SELECT
         hikayeler.*,
         kullanicilar.kullanici_adi,
         kategoriler.kategori_adi
@@ -26,7 +32,7 @@ $yeniHikayeler = $yeniSorgu->fetchAll();
 
 // En çok görüntülenen hikayeleri getir
 $populerSorgu = $db->query("
-    SELECT 
+    SELECT
         hikayeler.*,
         kullanicilar.kullanici_adi,
         kategoriler.kategori_adi
@@ -61,11 +67,36 @@ $populerHikayeler = $populerSorgu->fetchAll();
             <a href="index.php" class="aktif">Ana Sayfa</a>
             <a href="hikayeler/liste.php">Hikayeler</a>
             <a href="#kategoriler">Kategoriler</a>
+
+            <?php if ($girisYapildi): ?>
+                <a href="hikayeler/hikayelerim.php">Hikâyelerim</a>
+            <?php endif; ?>
         </nav>
 
         <div class="menu-butonlar">
-            <a href="kullanici/giris.php" class="giris-buton">Giriş Yap</a>
-            <a href="kullanici/kayit.php" class="kayit-buton">Kayıt Ol</a>
+
+            <?php if ($girisYapildi): ?>
+
+                <span class="hosgeldin">
+                    Merhaba, <?= htmlspecialchars($kullaniciAdi, ENT_QUOTES, "UTF-8") ?>
+                </span>
+
+                <a href="kullanici/cikis.php" class="giris-buton">
+                    Çıkış Yap
+                </a>
+
+            <?php else: ?>
+
+                <a href="kullanici/giris.php" class="giris-buton">
+                    Giriş Yap
+                </a>
+
+                <a href="kullanici/kayit.php" class="kayit-buton">
+                    Kayıt Ol
+                </a>
+
+            <?php endif; ?>
+
         </div>
 
     </div>
@@ -94,9 +125,19 @@ $populerHikayeler = $populerSorgu->fetchAll();
                         Hikayeleri Keşfet
                     </a>
 
-                    <a href="kullanici/kayit.php" class="ikincil-buton">
-                        Yazar Ol
-                    </a>
+                    <?php if ($girisYapildi): ?>
+                        <a href="hikayeler/ekle.php" class="ikincil-buton">
+                            Hikaye Yaz
+                        </a>
+
+                        <a href="hikayeler/hikayelerim.php" class="ikincil-buton">
+                            Hikâyelerim
+                        </a>
+                    <?php else: ?>
+                        <a href="kullanici/kayit.php" class="ikincil-buton">
+                            Yazar Ol
+                        </a>
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -129,13 +170,13 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
                     <?php foreach ($kategoriler as $kategori): ?>
 
-                        <a href="hikayeler/liste.php?kategori=<?php echo $kategori['id']; ?>"
+                        <a href="hikayeler/liste.php?kategori=<?= (int)$kategori['id'] ?>"
                            class="kategori-karti">
 
                             <span>📖</span>
 
                             <h3>
-                                <?php echo htmlspecialchars($kategori['kategori_adi']); ?>
+                                <?= htmlspecialchars($kategori['kategori_adi'], ENT_QUOTES, "UTF-8") ?>
                             </h3>
 
                         </a>
@@ -173,7 +214,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
                     <?php foreach ($populerHikayeler as $hikaye): ?>
 
-                        <a href="hikayeler/detay.php?id=<?php echo $hikaye['id']; ?>"
+                        <a href="hikayeler/detay.php?id=<?= (int)$hikaye['id'] ?>"
                            class="hikaye-karti">
 
                             <div class="hikaye-kapak">
@@ -181,8 +222,8 @@ $populerHikayeler = $populerSorgu->fetchAll();
                                 <?php if (!empty($hikaye['kapak_resmi'])): ?>
 
                                     <img
-                                        src="<?php echo htmlspecialchars($hikaye['kapak_resmi']); ?>"
-                                        alt="<?php echo htmlspecialchars($hikaye['baslik']); ?>"
+                                        src="<?= htmlspecialchars($hikaye['kapak_resmi'], ENT_QUOTES, "UTF-8") ?>"
+                                        alt="<?= htmlspecialchars($hikaye['baslik'], ENT_QUOTES, "UTF-8") ?>"
                                     >
 
                                 <?php else: ?>
@@ -196,23 +237,23 @@ $populerHikayeler = $populerSorgu->fetchAll();
                             <div class="hikaye-bilgi">
 
                                 <span class="hikaye-kategori">
-                                    <?php echo htmlspecialchars($hikaye['kategori_adi'] ?? 'Genel'); ?>
+                                    <?= htmlspecialchars($hikaye['kategori_adi'] ?? 'Genel', ENT_QUOTES, "UTF-8") ?>
                                 </span>
 
                                 <h3>
-                                    <?php echo htmlspecialchars($hikaye['baslik']); ?>
+                                    <?= htmlspecialchars($hikaye['baslik'], ENT_QUOTES, "UTF-8") ?>
                                 </h3>
 
                                 <p>
-                                    <?php
-                                    echo htmlspecialchars(
-                                        mb_strimwidth($hikaye['aciklama'] ?? '', 0, 90, '...')
-                                    );
-                                    ?>
+                                    <?= htmlspecialchars(
+                                        mb_strimwidth($hikaye['aciklama'] ?? '', 0, 90, '...'),
+                                        ENT_QUOTES,
+                                        "UTF-8"
+                                    ) ?>
                                 </p>
 
                                 <div class="hikaye-yazar">
-                                    ✍️ <?php echo htmlspecialchars($hikaye['kullanici_adi']); ?>
+                                    ✍️ <?= htmlspecialchars($hikaye['kullanici_adi'] ?? 'Bilinmeyen yazar', ENT_QUOTES, "UTF-8") ?>
                                 </div>
 
                             </div>
@@ -248,7 +289,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
                     <?php foreach ($yeniHikayeler as $hikaye): ?>
 
-                        <a href="hikayeler/detay.php?id=<?php echo $hikaye['id']; ?>"
+                        <a href="hikayeler/detay.php?id=<?= (int)$hikaye['id'] ?>"
                            class="hikaye-karti">
 
                             <div class="hikaye-kapak">
@@ -256,8 +297,8 @@ $populerHikayeler = $populerSorgu->fetchAll();
                                 <?php if (!empty($hikaye['kapak_resmi'])): ?>
 
                                     <img
-                                        src="<?php echo htmlspecialchars($hikaye['kapak_resmi']); ?>"
-                                        alt="<?php echo htmlspecialchars($hikaye['baslik']); ?>"
+                                        src="<?= htmlspecialchars($hikaye['kapak_resmi'], ENT_QUOTES, "UTF-8") ?>"
+                                        alt="<?= htmlspecialchars($hikaye['baslik'], ENT_QUOTES, "UTF-8") ?>"
                                     >
 
                                 <?php else: ?>
@@ -271,23 +312,23 @@ $populerHikayeler = $populerSorgu->fetchAll();
                             <div class="hikaye-bilgi">
 
                                 <span class="hikaye-kategori">
-                                    <?php echo htmlspecialchars($hikaye['kategori_adi'] ?? 'Genel'); ?>
+                                    <?= htmlspecialchars($hikaye['kategori_adi'] ?? 'Genel', ENT_QUOTES, "UTF-8") ?>
                                 </span>
 
                                 <h3>
-                                    <?php echo htmlspecialchars($hikaye['baslik']); ?>
+                                    <?= htmlspecialchars($hikaye['baslik'], ENT_QUOTES, "UTF-8") ?>
                                 </h3>
 
                                 <p>
-                                    <?php
-                                    echo htmlspecialchars(
-                                        mb_strimwidth($hikaye['aciklama'] ?? '', 0, 90, '...')
-                                    );
-                                    ?>
+                                    <?= htmlspecialchars(
+                                        mb_strimwidth($hikaye['aciklama'] ?? '', 0, 90, '...'),
+                                        ENT_QUOTES,
+                                        "UTF-8"
+                                    ) ?>
                                 </p>
 
                                 <div class="hikaye-yazar">
-                                    ✍️ <?php echo htmlspecialchars($hikaye['kullanici_adi']); ?>
+                                    ✍️ <?= htmlspecialchars($hikaye['kullanici_adi'] ?? 'Bilinmeyen yazar', ENT_QUOTES, "UTF-8") ?>
                                 </div>
 
                             </div>
@@ -319,9 +360,15 @@ $populerHikayeler = $populerSorgu->fetchAll();
                 </p>
             </div>
 
-            <a href="kullanici/kayit.php" class="ana-buton">
-                Hemen Katıl
-            </a>
+            <?php if ($girisYapildi): ?>
+                <a href="hikayeler/ekle.php" class="ana-buton">
+                    Hikaye Yaz
+                </a>
+            <?php else: ?>
+                <a href="kullanici/kayit.php" class="ana-buton">
+                    Hemen Katıl
+                </a>
+            <?php endif; ?>
 
         </div>
     </section>
@@ -338,7 +385,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
         <p>Hikayelerin buluştuğu yer.</p>
 
         <p class="telif">
-            © <?php echo date("Y"); ?> WordNest. Tüm hakları saklıdır.
+            © <?= date("Y") ?> WordNest. Tüm hakları saklıdır.
         </p>
 
     </div>
