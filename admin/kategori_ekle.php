@@ -7,7 +7,7 @@ require_once __DIR__ . "/../config/baglanti.php";
 // Admin kontrolü
 if (
     !isset($_SESSION["kullanici_id"]) ||
-    ($_SESSION["rol"] ?? "") !== "admin"
+    !in_array(($_SESSION["rol"] ?? ""), ["admin", "root_admin"], true)
 ) {
     header("Location: ../kullanici/giris.php");
     exit;
@@ -250,6 +250,10 @@ button:hover {
     }
 }
 </style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece"){document.documentElement.setAttribute("data-wordnest-theme","gece")}}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -339,5 +343,7 @@ button:hover {
 
 </div>
 
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
 </body>
 </html>

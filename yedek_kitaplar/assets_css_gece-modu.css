@@ -1,0 +1,119 @@
+/* WordNest theme toggle */
+html[data-wordnest-theme="gece"] {
+    color-scheme: dark;
+}
+
+html[data-wordnest-theme="gece"] body {
+    background: #111720 !important;
+    color: #e6edf5 !important;
+}
+
+html[data-wordnest-theme="gece"] .ust-menu {
+    background: #19212d !important;
+    border-color: #303b4a !important;
+}
+
+html[data-wordnest-theme="gece"] .kategori-bolumu,
+html[data-wordnest-theme="gece"] .hikaye-bolumu,
+html[data-wordnest-theme="gece"] .yeni-hikayeler,
+html[data-wordnest-theme="gece"] .yazar-cagrisi,
+html[data-wordnest-theme="gece"] .container,
+html[data-wordnest-theme="gece"] main {
+    background-color: transparent !important;
+}
+
+html[data-wordnest-theme="gece"] .kategori-karti,
+html[data-wordnest-theme="gece"] .hikaye-karti,
+html[data-wordnest-theme="gece"] .kitap-ogesi,
+html[data-wordnest-theme="gece"] .kitap-karti,
+html[data-wordnest-theme="gece"] .kitap-okuma-karti,
+html[data-wordnest-theme="gece"] .bolum-karti,
+html[data-wordnest-theme="gece"] .chapter-section,
+html[data-wordnest-theme="gece"] .story-card,
+html[data-wordnest-theme="gece"] .management-item,
+html[data-wordnest-theme="gece"] .card,
+html[data-wordnest-theme="gece"] .hikaye-kart,
+html[data-wordnest-theme="gece"] .kitap-form,
+html[data-wordnest-theme="gece"] .kitap-satir,
+html[data-wordnest-theme="gece"] .liste-bos,
+html[data-wordnest-theme="gece"] .kitap-bos,
+html[data-wordnest-theme="gece"] .bos,
+html[data-wordnest-theme="gece"] .welcome,
+html[data-wordnest-theme="gece"] .hikaye-bilgisi,
+html[data-wordnest-theme="gece"] .kitap-bilgi,
+html[data-wordnest-theme="gece"] .kitap-okuma-karti {
+    background: #1b2532 !important;
+    border-color: #344253 !important;
+    color: #e6edf5 !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .18) !important;
+}
+
+html[data-wordnest-theme="gece"] h1,
+html[data-wordnest-theme="gece"] h2,
+html[data-wordnest-theme="gece"] h3,
+html[data-wordnest-theme="gece"] h4,
+html[data-wordnest-theme="gece"] p,
+html[data-wordnest-theme="gece"] label,
+html[data-wordnest-theme="gece"] li,
+html[data-wordnest-theme="gece"] .ana-menu a,
+html[data-wordnest-theme="gece"] .hikaye-bilgi,
+html[data-wordnest-theme="gece"] .hikaye-kategori,
+html[data-wordnest-theme="gece"] .hikaye-yazar,
+html[data-wordnest-theme="gece"] .kitap-aciklama,
+html[data-wordnest-theme="gece"] .kitap-yazar,
+html[data-wordnest-theme="gece"] .kitap-metin,
+html[data-wordnest-theme="gece"] .story-description,
+html[data-wordnest-theme="gece"] .info-item,
+html[data-wordnest-theme="gece"] .chapter-name,
+html[data-wordnest-theme="gece"] .bilgi,
+html[data-wordnest-theme="gece"] .aciklama,
+html[data-wordnest-theme="gece"] .section-title,
+html[data-wordnest-theme="gece"] .welcome p {
+    color: #e6edf5 !important;
+}
+
+html[data-wordnest-theme="gece"] a:not(.menu-butonlar a):not(.giris-buton):not(.kayit-buton):not(.ana-buton):not(.ikincil-buton):not(.admin-panel-buton):not(.kitap-admin-link):not(.kitap-okuma-ust a) {
+    color: #ffb56b;
+}
+
+html[data-wordnest-theme="gece"] input,
+html[data-wordnest-theme="gece"] textarea,
+html[data-wordnest-theme="gece"] select {
+    background: #121a24 !important;
+    color: #e6edf5 !important;
+    border-color: #465467 !important;
+}
+
+html[data-wordnest-theme="gece"] .kitap-kapak,
+html[data-wordnest-theme="gece"] .hikaye-kapak,
+html[data-wordnest-theme="gece"] .story-cover {
+    background: #253244 !important;
+}
+
+.wordnest-tema-dugmesi {
+    position: fixed;
+    right: 22px;
+    bottom: 20px;
+    z-index: 99999;
+    border: 1px solid rgba(255,255,255,.22);
+    border-radius: 999px;
+    padding: 12px 17px;
+    background: #242b35;
+    color: #fff;
+    box-shadow: 0 5px 18px rgba(0,0,0,.22);
+    font: 700 14px Arial, sans-serif;
+    cursor: pointer;
+}
+
+.wordnest-tema-dugmesi:hover {
+    transform: translateY(-2px);
+}
+
+@media (max-width: 600px) {
+    .wordnest-tema-dugmesi {
+        right: 12px;
+        bottom: 12px;
+        padding: 10px 13px;
+        font-size: 13px;
+    }
+}

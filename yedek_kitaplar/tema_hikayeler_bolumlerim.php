@@ -1,0 +1,530 @@
+
+<?php
+session_start();
+
+require_once __DIR__ . "/../config/baglanti.php";
+
+if (!isset($_SESSION["kullanici_id"])) {
+    header("Location: ../kullanici/giris.php");
+    exit;
+}
+
+$kullanici_id = $_SESSION["kullanici_id"];
+
+$hikaye_id = filter_input(INPUT_GET, "hikaye_id", FILTER_VALIDATE_INT);
+
+if (!$hikaye_id || $hikaye_id < 1) {
+    header("Location: hikayelerim.php");
+    exit;
+}
+
+$sorgu = $db->prepare("
+    SELECT id, baslik
+    FROM hikayeler
+    WHERE id = ? AND kullanici_id = ?
+");
+$sorgu->execute([$hikaye_id, $kullanici_id]);
+$hikaye = $sorgu->fetch();
+
+if (!$hikaye) {
+    header("Location: hikayelerim.php");
+    exit;
+}
+
+if (empty($_SESSION["csrf_token"])) {
+    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+
+// Bölüm silme işlemi
+if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST["islem"] ?? "") === "sil") {
+
+    $token = $_POST["csrf_token"] ?? "";
+    $bolum_id = filter_input(INPUT_POST, "bolum_id", FILTER_VALIDATE_INT);
+
+    if (!hash_equals($_SESSION["csrf_token"], $token)) {
+        header("Location: bolumlerim.php?hikaye_id=" . $hikaye_id . "&hata=guvenlik");
+        exit;
+    }
+
+    if ($bolum_id) {
+        try {
+            $db->beginTransaction();
+
+            $kontrol = $db->prepare("
+                SELECT b.id
+                FROM bolumler b
+                INNER JOIN hikayeler h ON b.hikaye_id = h.id
+                WHERE b.id = ?
+                AND b.hikaye_id = ?
+                AND h.kullanici_id = ?
+            ");
+            $kontrol->execute([$bolum_id, $hikaye_id, $kullanici_id]);
+
+            if (!$kontrol->fetch()) {
+                throw new Exception("Bölüm bulunamadı.");
+            }
+
+            $sil = $db->prepare("
+                DELETE FROM bolumler
+                WHERE id = ? AND hikaye_id = ?
+            ");
+            $sil->execute([$bolum_id, $hikaye_id]);
+
+            // Kalan bölümlerin sırasını yeniden düzenle
+            $liste = $db->prepare("
+                SELECT id
+                FROM bolumler
+                WHERE hikaye_id = ?
+                ORDER BY bolum_sirasi ASC, id ASC
+            ");
+            $liste->execute([$hikaye_id]);
+            $bolumler = $liste->fetchAll();
+
+            $guncelle = $db->prepare("
+                UPDATE bolumler
+                SET bolum_sirasi = ?
+                WHERE id = ? AND hikaye_id = ?
+            ");
+
+            $sira = 1;
+
+            foreach ($bolumler as $bolum) {
+                $guncelle->execute([
+                    $sira,
+                    $bolum["id"],
+                    $hikaye_id
+                ]);
+
+                $sira++;
+            }
+
+            $db->commit();
+
+            header("Location: bolumlerim.php?hikaye_id=" . $hikaye_id . "&silindi=1");
+            exit;
+
+        } catch (Exception $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+
+            header("Location: bolumlerim.php?hikaye_id=" . $hikaye_id . "&hata=silinemedi");
+            exit;
+        }
+    }
+}
+
+// Bölümleri getir
+$bolumSorgu = $db->prepare("
+    SELECT id, bolum_basligi, bolum_sirasi, olusturma_tarihi
+    FROM bolumler
+    WHERE hikaye_id = ?
+    ORDER BY bolum_sirasi ASC, id ASC
+");
+$bolumSorgu->execute([$hikaye_id]);
+$bolumler = $bolumSorgu->fetchAll();
+?>
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Bölümlerim | WordNest</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #fffaf5;
+            color: #333;
+        }
+
+        header {
+            background: #ff6b00;
+            color: white;
+            padding: 20px 7%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        header h2 {
+            font-size: 25px;
+        }
+
+        .header-butonlar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .header-buton {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 11px 18px;
+            border-radius: 9px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            border: 2px solid white;
+            transition: 0.2s ease;
+        }
+
+        /* Ana sayfaya dönüş butonu */
+        .ana-sayfa-buton {
+            background: white;
+            color: #e85d00;
+        }
+
+        .ana-sayfa-buton:hover {
+            background: #fff0e5;
+            transform: translateY(-2px);
+        }
+
+        /* Hikâyelerime dönüş butonu */
+        .hikayeler-buton {
+            background: #e85d00;
+            color: white;
+        }
+
+        .hikayeler-buton:hover {
+            background: #c94f00;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        h1 {
+            color: #e85d00;
+            margin-bottom: 10px;
+        }
+
+        .hikaye-adi {
+            color: #777;
+            margin-bottom: 25px;
+        }
+
+        .bolum-karti {
+            background: white;
+            border: 1px solid #f0e4da;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.04);
+        }
+
+        .bolum-bilgi h3 {
+            color: #e85d00;
+            margin-bottom: 8px;
+        }
+
+        .bolum-bilgi p {
+            color: #777;
+            font-size: 14px;
+        }
+
+        .sil-buton {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 7px;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .sil-buton:hover {
+            background: #b52a37;
+        }
+
+        .ana-buton {
+            display: inline-block;
+            background: #ff6b00;
+            color: white;
+            text-decoration: none;
+            padding: 12px 18px;
+            border-radius: 8px;
+            font-weight: bold;
+            margin-bottom: 22px;
+        }
+
+        .ana-buton:hover {
+            background: #e85d00;
+        }
+
+        .bos {
+            background: white;
+            border: 1px solid #f0e4da;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            color: #777;
+        }
+
+        .mesaj {
+            padding: 13px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .basarili {
+            background: #e4f7e8;
+            color: #247a35;
+        }
+
+        .hata {
+            background: #ffe4e4;
+            color: #b00020;
+        }
+
+        /* Silme penceresi */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.55);
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            z-index: 1000;
+        }
+
+        .modal.aktif {
+            display: flex;
+        }
+
+        .modal-icerik {
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            padding: 28px;
+            border-radius: 14px;
+            text-align: center;
+        }
+
+        .modal-icerik h2 {
+            color: #dc3545;
+            margin-bottom: 12px;
+        }
+
+        .modal-icerik p {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 22px;
+        }
+
+        .modal-butonlar {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .modal-butonlar button {
+            border: none;
+            padding: 11px 17px;
+            border-radius: 7px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .iptal {
+            background: #eee;
+            color: #333;
+        }
+
+        .onayla {
+            background: #dc3545;
+            color: white;
+        }
+
+        @media(max-width: 600px) {
+            header {
+                padding: 18px 20px;
+            }
+
+            .header-butonlar {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .header-buton {
+                width: 100%;
+                text-align: center;
+            }
+
+            .bolum-karti {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .sil-buton {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h2>📚 WordNest</h2>
+
+    <div class="header-butonlar">
+        <a href="../index.php" class="header-buton ana-sayfa-buton">
+            🏠 Ana Sayfaya Dön
+        </a>
+
+        <a href="hikayelerim.php" class="header-buton hikayeler-buton">
+            📖 Hikâyelerime Dön
+        </a>
+    </div>
+</header>
+
+<div class="container">
+
+    <h1>Bölümlerim</h1>
+
+    <p class="hikaye-adi">
+        Hikâye: <strong>
+            <?= htmlspecialchars($hikaye["baslik"], ENT_QUOTES, "UTF-8") ?>
+        </strong>
+    </p>
+
+    <a
+        href="bolum_ekle.php?hikaye_id=<?= (int)$hikaye_id ?>"
+        class="ana-buton"
+    >
+        + Yeni Bölüm Ekle
+    </a>
+
+    <?php if (isset($_GET["silindi"])): ?>
+        <div class="mesaj basarili">
+            Bölüm başarıyla silindi.
+        </div>
+    <?php endif; ?>
+
+    <?php if (isset($_GET["hata"])): ?>
+        <div class="mesaj hata">
+            İşlem gerçekleştirilemedi. Tekrar deneyebilirsin.
+        </div>
+    <?php endif; ?>
+
+    <?php if (count($bolumler) > 0): ?>
+
+        <?php foreach ($bolumler as $bolum): ?>
+
+            <div class="bolum-karti">
+
+                <div class="bolum-bilgi">
+
+                    <h3>
+                        <?= (int)$bolum["bolum_sirasi"] ?>.
+                        <?= htmlspecialchars($bolum["bolum_basligi"], ENT_QUOTES, "UTF-8") ?>
+                    </h3>
+
+                    <p>
+                        Eklenme tarihi:
+                        <?= htmlspecialchars($bolum["olusturma_tarihi"], ENT_QUOTES, "UTF-8") ?>
+                    </p>
+
+                </div>
+
+                <button
+                    type="button"
+                    class="sil-buton"
+                    onclick="silmeOnayi(<?= (int)$bolum['id'] ?>)"
+                >
+                    Bölümü Sil
+                </button>
+
+            </div>
+
+        <?php endforeach; ?>
+
+    <?php else: ?>
+
+        <div class="bos">
+            <h2>Henüz bölüm eklememişsin 📖</h2>
+            <p style="margin-top: 12px;">
+                Hikâyene ilk bölümünü ekleyerek yazmaya başlayabilirsin.
+            </p>
+        </div>
+
+    <?php endif; ?>
+
+</div>
+
+<!-- Silme onay penceresi -->
+<div class="modal" id="silmeModal">
+
+    <div class="modal-icerik">
+
+        <h2>Bölüm Silinsin mi?</h2>
+
+        <p>
+            Bu bölümü silmek istediğine emin misin?
+            Bu işlem geri alınamaz.
+        </p>
+
+        <div class="modal-butonlar">
+
+            <button type="button" class="iptal" onclick="modalKapat()">
+                Vazgeç
+            </button>
+
+            <form method="POST" id="silmeForm">
+
+                <input type="hidden" name="islem" value="sil">
+
+                <input
+                    type="hidden"
+                    name="csrf_token"
+                    value="<?= htmlspecialchars($_SESSION["csrf_token"], ENT_QUOTES, "UTF-8") ?>"
+                >
+
+                <input type="hidden" name="bolum_id" id="silBolumId">
+
+                <button type="submit" class="onayla">
+                    Evet, Sil
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+function silmeOnayi(bolumId) {
+    document.getElementById("silBolumId").value = bolumId;
+    document.getElementById("silmeModal").classList.add("aktif");
+}
+
+function modalKapat() {
+    document.getElementById("silmeModal").classList.remove("aktif");
+}
+</script>
+
+</body>
+</html>

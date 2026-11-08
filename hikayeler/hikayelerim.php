@@ -68,13 +68,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
                 $guncelle = $db->prepare(
                     "UPDATE hikayeler
-                     SET durum = 'yayinda',
+                    SET durum = 'incelemede',
                          guncelleme_tarihi = NOW()
                      WHERE id = ? AND kullanici_id = ?"
                 );
                 $guncelle->execute([$hikayeId, $kullaniciId]);
 
-                $mesaj = "Hikâyen başarıyla yayımlandı.";
+                $durumSorgu = $db->prepare(
+                    "SELECT durum FROM hikayeler WHERE id = ? AND kullanici_id = ? LIMIT 1"
+                );
+                $durumSorgu->execute([$hikayeId, $kullaniciId]);
+                $kaydedilenDurum = mb_strtolower(trim((string) $durumSorgu->fetchColumn()), "UTF-8");
+                if ($kaydedilenDurum !== "incelemede") {
+                    throw new Exception("İnceleme isteği veritabanına kaydedilemedi. Sayfayı yenileyip tekrar dene.");
+                }
+
+                $mesaj = "Hikâyen yönetici incelemesine gönderildi. Onaylanınca kategorilerde yayımlanacak.";
             }
 
             /* HİKÂYEYİ TASLAĞA AL */
@@ -351,9 +360,19 @@ $hikayeler = $sorgu->fetchAll();
             color: #916000;
         }
 
-        .yayinda {
+        .onaylandi {
             background: #dff5e4;
             color: #247a32;
+        }
+
+        .incelemede {
+            background: #e5efff;
+            color: #315b9a;
+        }
+
+        .reddedildi {
+            background: #ffe4e4;
+            color: #9b2e2e;
         }
 
         .tamamlandi {
@@ -465,6 +484,10 @@ $hikayeler = $sorgu->fetchAll();
             }
         }
     </style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece"){document.documentElement.setAttribute("data-wordnest-theme","gece")}}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -496,6 +519,7 @@ $hikayeler = $sorgu->fetchAll();
         <div class="hikaye-listesi">
 
             <?php foreach ($hikayeler as $hikaye): ?>
+                <?php $durumHikaye = mb_strtolower(trim((string) $hikaye["durum"]), "UTF-8"); ?>
 
                 <div class="hikaye-kart">
 
@@ -532,12 +556,14 @@ $hikayeler = $sorgu->fetchAll();
                         <?= (int) $hikaye["goruntulenme"] ?>
                     </p>
 
-                    <span class="durum <?= htmlspecialchars($hikaye["durum"]) ?>">
+                    <span class="durum <?= in_array($durumHikaye, ["onaylandi", "incelemede", "reddedildi"], true) ? $durumHikaye : "taslak" ?>">
                         <?php
-                        if ($hikaye["durum"] === "yayinda") {
+                        if ($durumHikaye === "onaylandi") {
                             echo "🟢 Yayımlanmış";
-                        } elseif ($hikaye["durum"] === "tamamlandi") {
-                            echo "🔵 Tamamlandı";
+                        } elseif ($durumHikaye === "incelemede") {
+                            echo "🔵 Yönetici incelemesinde";
+                        } elseif ($durumHikaye === "reddedildi") {
+                            echo "🔴 Reddedildi · Düzenleyip tekrar gönderebilirsin";
                         } else {
                             echo "🟡 Taslak";
                         }
@@ -571,7 +597,7 @@ $hikayeler = $sorgu->fetchAll();
 
                     <div class="butonlar">
 
-                        <?php if ($hikaye["durum"] === "taslak"): ?>
+                        <?php if (in_array($durumHikaye, ["taslak", "reddedildi"], true)): ?>
 
                             <form method="POST" style="flex:1;">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
@@ -583,7 +609,7 @@ $hikayeler = $sorgu->fetchAll();
                                 </button>
                             </form>
 
-                        <?php elseif ($hikaye["durum"] === "yayinda"): ?>
+                        <?php elseif ($durumHikaye === "onaylandi"): ?>
 
                             <form method="POST" style="flex:1;">
                                 <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
@@ -635,5 +661,7 @@ $hikayeler = $sorgu->fetchAll();
 
 </div>
 
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
 </body>
 </html>

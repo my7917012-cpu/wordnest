@@ -6,10 +6,10 @@ require_once __DIR__ . "/config/baglanti.php";
 
 // Kullanıcı giriş kontrolü
 $girisYapildi = isset($_SESSION["kullanici_id"]);
-$kullaniciAdi = $_SESSION["kullanici_adi"] ?? "";
+$kullaniciAdi = $_SESSION["profil_gorunen_ad"] ?? ($_SESSION["kullanici_adi"] ?? "");
 
 // Admin kontrolü
-$adminMi = $girisYapildi && ($_SESSION["rol"] ?? "") === "admin";
+$adminMi = $girisYapildi && in_array(($_SESSION["rol"] ?? ""), ["admin", "root_admin"], true);
 
 // Kategori emojileri
 $kategoriEmojileri = [
@@ -41,7 +41,7 @@ $yeniSorgu = $db->query("
     FROM hikayeler
     LEFT JOIN kullanicilar ON hikayeler.kullanici_id = kullanicilar.id
     LEFT JOIN kategoriler ON hikayeler.kategori_id = kategoriler.id
-    WHERE hikayeler.durum IN ('yayinda', 'tamamlandi')
+    WHERE LOWER(TRIM(hikayeler.durum)) = 'onaylandi'
     ORDER BY hikayeler.olusturma_tarihi DESC
     LIMIT 8
 ");
@@ -56,7 +56,7 @@ $populerSorgu = $db->query("
     FROM hikayeler
     LEFT JOIN kullanicilar ON hikayeler.kullanici_id = kullanicilar.id
     LEFT JOIN kategoriler ON hikayeler.kategori_id = kategoriler.id
-    WHERE hikayeler.durum IN ('yayinda', 'tamamlandi')
+    WHERE LOWER(TRIM(hikayeler.durum)) = 'onaylandi'
     ORDER BY hikayeler.goruntulenme DESC
     LIMIT 4
 ");
@@ -75,6 +75,16 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
     <style>
         /* ÜST MENÜ ADMIN BUTONU */
+
+        .hosgeldin a {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px dotted currentColor;
+        }
+
+        .hosgeldin a:hover {
+            text-decoration: underline;
+        }
 
         .admin-panel-buton {
             display: inline-flex;
@@ -175,7 +185,11 @@ $populerHikayeler = $populerSorgu->fetchAll();
                 padding: 15px;
             }
         }
-    </style>
+    .hosgeldin.profil-buton{display:inline-flex;align-items:center;padding:8px 12px;border:1px solid rgba(255,255,255,.55);border-radius:9px;background:rgba(255,255,255,.10);color:inherit;text-decoration:none;font-weight:600;transition:.2s ease}.hosgeldin.profil-buton:hover{background:rgba(255,255,255,.20);transform:translateY(-1px)}</style>
+<link rel="stylesheet" href="assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece")document.documentElement.setAttribute("data-wordnest-theme","gece")}catch(e){}</script>
+<link rel="stylesheet" href="assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -191,6 +205,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
             <a href="index.php" class="aktif">Ana Sayfa</a>
             <a href="hikayeler/liste.php">Hikayeler</a>
             <a href="#kategoriler">Kategoriler</a>
+            <a href="kitaplar.php">Kitaplar</a>
 
             <?php if ($girisYapildi): ?>
                 <a href="hikayeler/hikayelerim.php">Hikâyelerim</a>
@@ -201,9 +216,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
             <?php if ($girisYapildi): ?>
 
-                <span class="hosgeldin">
-                    Merhaba, <?= htmlspecialchars($kullaniciAdi, ENT_QUOTES, "UTF-8") ?>
-                </span>
+                <a class="hosgeldin profil-buton" href="kullanici/profil.php?id=<?= (int) ($_SESSION["kullanici_id"] ?? 0) ?>">Merhaba, <?= htmlspecialchars($kullaniciAdi, ENT_QUOTES, "UTF-8") ?></a>
 
                 <?php if ($adminMi): ?>
                     <a href="admin/panel.php" class="admin-panel-buton">
@@ -317,7 +330,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
                         $emoji = $kategoriEmojileri[$kategoriAdi] ?? "📖";
                         ?>
 
-                        <a href="hikayeler/liste.php?kategori=<?= (int)$kategori['id'] ?>"
+                        <a href="kitaplar.php?kategori=<?= (int)$kategori['id'] ?>"
                            class="kategori-karti">
 
                             <span class="kategori-emoji">
@@ -373,7 +386,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
                     <?php foreach ($populerHikayeler as $hikaye): ?>
 
-                        <a href="hikayeler/detay.php?id=<?= (int)$hikaye['id'] ?>"
+                        <a href="hikayeler/oku.php?id=<?= (int)$hikaye['id'] ?>"
                            class="hikaye-karti">
 
                             <div class="hikaye-kapak">
@@ -446,7 +459,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
 
                     <?php foreach ($yeniHikayeler as $hikaye): ?>
 
-                        <a href="hikayeler/detay.php?id=<?= (int)$hikaye['id'] ?>"
+                        <a href="hikayeler/oku.php?id=<?= (int)$hikaye['id'] ?>"
                            class="hikaye-karti">
 
                             <div class="hikaye-kapak">
@@ -548,5 +561,7 @@ $populerHikayeler = $populerSorgu->fetchAll();
     </div>
 </footer>
 
+<script src="assets/js/gece-modu.js"></script>
+<script src="assets/js/dil-degistir.js"></script>
 </body>
 </html>

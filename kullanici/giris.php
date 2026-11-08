@@ -1,4 +1,3 @@
-
 <?php
 session_start();
 
@@ -7,29 +6,28 @@ require_once __DIR__ . "/../config/baglanti.php";
 $hata = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
     $kullanici = trim($_POST["kullanici"] ?? "");
     $sifre = $_POST["sifre"] ?? "";
 
-    if (empty($kullanici) || empty($sifre)) {
+    if ($kullanici === "" || $sifre === "") {
         $hata = "Lütfen tüm alanları doldurun.";
     } else {
-
         $sorgu = $db->prepare(
-            "SELECT id, kullanici_adi, ad_soyad, email, sifre, rol
+            "SELECT id, kullanici_adi, ad_soyad, email, sifre, rol, email_dogrulandi
              FROM kullanicilar
              WHERE email = ? OR kullanici_adi = ?
              LIMIT 1"
         );
-
         $sorgu->execute([$kullanici, $kullanici]);
-
         $uye = $sorgu->fetch();
 
         if ($uye && password_verify($sifre, $uye["sifre"])) {
+            if ((int) $uye["email_dogrulandi"] !== 1) {
+                header("Location: email_dogrula.php?email=" . rawurlencode($uye["email"]));
+                exit;
+            }
 
             session_regenerate_id(true);
-
             $_SESSION["kullanici_id"] = $uye["id"];
             $_SESSION["kullanici_adi"] = $uye["kullanici_adi"];
             $_SESSION["ad_soyad"] = $uye["ad_soyad"];
@@ -38,10 +36,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             header("Location: ../index.php");
             exit;
-
-        } else {
-            $hata = "Kullanıcı bilgileri veya şifre hatalı.";
         }
+
+        $hata = "Kullanıcı bilgileri veya şifre hatalı.";
     }
 }
 ?>
@@ -210,6 +207,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
     </style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece"){document.documentElement.setAttribute("data-wordnest-theme","gece")}}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -273,5 +274,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 </div>
 
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
 </body>
 </html>

@@ -1,0 +1,555 @@
+
+<?php
+session_start();
+
+require_once __DIR__ . "/../config/baglanti.php";
+
+// Admin kontrolü
+if (!isset($_SESSION["kullanici_id"]) || ($_SESSION["rol"] ?? "") !== "admin") {
+    header("Location: ../kullanici/giris.php");
+    exit;
+}
+
+// CSRF token oluştur
+if (empty($_SESSION["csrf_token"])) {
+    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+
+$mesaj = "";
+$mesajTuru = "";
+
+// Kullanıcı silme işlemi
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST["kullanici_sil"])) {
+
+    $token = $_POST["csrf_token"] ?? "";
+
+    if (!hash_equals($_SESSION["csrf_token"], $token)) {
+        $mesaj = "Güvenlik doğrulaması başarısız.";
+        $mesajTuru = "hata";
+    } else {
+
+        $silinecekId = (int)($_POST["kullanici_id"] ?? 0);
+
+        // Admin kendi hesabını silemez.
+        if ($silinecekId === (int)$_SESSION["kullanici_id"]) {
+            $mesaj = "Kendi admin hesabını silemezsin.";
+            $mesajTuru = "hata";
+        } else {
+
+            // Yalnızca normal kullanıcıları sil.
+            $sil = $db->prepare("
+                DELETE FROM kullanicilar
+                WHERE id = ? AND rol = 'user'
+            ");
+
+            $sil->execute([$silinecekId]);
+
+            if ($sil->rowCount() > 0) {
+                $mesaj = "Kullanıcı başarıyla silindi.";
+                $mesajTuru = "basari";
+            } else {
+                $mesaj = "Kullanıcı bulunamadı veya silme işlemi yapılamadı.";
+                $mesajTuru = "hata";
+            }
+        }
+    }
+}
+
+// Kullanıcıları getir
+$sorgu = $db->query("
+    SELECT
+        id,
+        kullanici_adi,
+        ad_soyad,
+        email,
+        rol,
+        kayit_tarihi
+    FROM kullanicilar
+    ORDER BY kayit_tarihi DESC
+");
+
+$kullanicilar = $sorgu->fetchAll();
+
+// Toplam kullanıcı sayısı
+$toplamKullanici = count($kullanicilar);
+?>
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>WordNest - Kullanıcı Yönetimi</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #fffaf5;
+    color: #333;
+}
+
+header {
+    background: #ff6b00;
+    color: white;
+    padding: 20px 5%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+header h1 {
+    font-size: 24px;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.header-buttons a {
+    text-decoration: none;
+    padding: 11px 16px;
+    border-radius: 9px;
+    font-weight: bold;
+    border: 2px solid white;
+}
+
+.home-button {
+    background: white;
+    color: #e85d00;
+}
+
+.back-button {
+    background: #e85d00;
+    color: white;
+}
+
+.container {
+    width: 92%;
+    max-width: 1200px;
+    margin: 35px auto;
+}
+
+.page-title {
+    margin-bottom: 25px;
+}
+
+.page-title h2 {
+    color: #e85d00;
+    margin-bottom: 8px;
+}
+
+.page-title p {
+    color: #777;
+    line-height: 1.5;
+}
+
+.info-card {
+    background: white;
+    padding: 22px;
+    border-radius: 13px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.05);
+    border-left: 5px solid #ff6b00;
+    margin-bottom: 25px;
+}
+
+.info-card span {
+    color: #777;
+    font-size: 14px;
+}
+
+.info-card strong {
+    display: block;
+    color: #e85d00;
+    font-size: 30px;
+    margin-top: 8px;
+}
+
+.message {
+    padding: 14px 18px;
+    border-radius: 9px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+.message.basari {
+    background: #e7f7e9;
+    color: #237a36;
+}
+
+.message.hata {
+    background: #ffe8e8;
+    color: #b42318;
+}
+
+.table-container {
+    background: white;
+    border-radius: 13px;
+    box-shadow: 0 4px 15px rgba(0,0,0,.05);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 850px;
+}
+
+th, td {
+    padding: 16px 14px;
+    text-align: left;
+    border-bottom: 1px solid #f1eee9;
+    font-size: 14px;
+}
+
+th {
+    background: #fff0e5;
+    color: #e85d00;
+}
+
+tr:hover td {
+    background: #fffaf5;
+}
+
+.rol {
+    display: inline-block;
+    padding: 6px 11px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.rol.admin {
+    background: #fff0d9;
+    color: #b85b00;
+}
+
+.rol.user {
+    background: #e9f4ff;
+    color: #1764a0;
+}
+
+.sil-buton {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 9px 13px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.sil-buton:hover {
+    background: #b92332;
+}
+
+.kendi-hesabin {
+    color: #269044;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.bos-mesaj {
+    padding: 30px;
+    text-align: center;
+    color: #777;
+}
+
+/* Özel silme penceresi */
+
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.modal.aktif {
+    display: flex;
+}
+
+.modal-icerik {
+    background: white;
+    width: 100%;
+    max-width: 420px;
+    padding: 30px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 10px 35px rgba(0,0,0,.2);
+}
+
+.modal-ikon {
+    font-size: 45px;
+    margin-bottom: 15px;
+}
+
+.modal-icerik h3 {
+    color: #d32f2f;
+    margin-bottom: 12px;
+}
+
+.modal-icerik p {
+    color: #666;
+    line-height: 1.5;
+    margin-bottom: 22px;
+}
+
+.modal-butonlar {
+    display: flex;
+    gap: 10px;
+}
+
+.modal-butonlar button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.vazgec-buton {
+    background: #eee;
+    color: #333;
+}
+
+.onayla-buton {
+    background: #dc3545;
+    color: white;
+}
+
+@media(max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    header h1 {
+        text-align: center;
+    }
+
+    .header-buttons {
+        flex-direction: column;
+    }
+
+    .header-buttons a {
+        text-align: center;
+    }
+
+    .container {
+        width: 94%;
+    }
+}
+</style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece"){document.documentElement.setAttribute("data-wordnest-theme","gece")}}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
+</head>
+
+<body>
+
+<header>
+    <h1>👥 WordNest Kullanıcı Yönetimi</h1>
+
+    <div class="header-buttons">
+        <a href="../index.php" class="home-button">🏠 Ana Sayfaya Dön</a>
+        <a href="panel.php" class="back-button">← Yönetim Paneline Dön</a>
+    </div>
+</header>
+
+<main class="container">
+
+    <div class="page-title">
+        <h2>Kayıtlı Kullanıcılar</h2>
+        <p>WordNest platformuna kayıt olan kullanıcıları buradan yönetebilirsin.</p>
+    </div>
+
+    <?php if ($mesaj !== ""): ?>
+        <div class="message <?= htmlspecialchars($mesajTuru) ?>">
+            <?= htmlspecialchars($mesaj, ENT_QUOTES, "UTF-8") ?>
+        </div>
+    <?php endif; ?>
+
+    <div class="info-card">
+        <span>Toplam Kayıtlı Hesap</span>
+        <strong><?= $toplamKullanici ?></strong>
+    </div>
+
+    <div class="table-container">
+
+        <?php if ($toplamKullanici > 0): ?>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Ad Soyad</th>
+                        <th>Kullanıcı Adı</th>
+                        <th>E-posta</th>
+                        <th>Rol</th>
+                        <th>Kayıt Tarihi</th>
+                        <th>İşlem</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    <?php foreach ($kullanicilar as $kullanici): ?>
+
+                        <tr>
+                            <td><?= (int)$kullanici["id"] ?></td>
+
+                            <td>
+                                <?= htmlspecialchars($kullanici["ad_soyad"] ?? "", ENT_QUOTES, "UTF-8") ?>
+                            </td>
+
+                            <td>
+                                <?= htmlspecialchars($kullanici["kullanici_adi"], ENT_QUOTES, "UTF-8") ?>
+                            </td>
+
+                            <td>
+                                <?= htmlspecialchars($kullanici["email"], ENT_QUOTES, "UTF-8") ?>
+                            </td>
+
+                            <td>
+                                <span class="rol <?= htmlspecialchars($kullanici["rol"]) ?>">
+                                    <?= $kullanici["rol"] === "admin" ? "Admin" : "Kullanıcı" ?>
+                                </span>
+                            </td>
+
+                            <td>
+                                <?= htmlspecialchars($kullanici["kayit_tarihi"] ?? "-", ENT_QUOTES, "UTF-8") ?>
+                            </td>
+
+                            <td>
+
+                                <?php if ((int)$kullanici["id"] === (int)$_SESSION["kullanici_id"]): ?>
+
+                                    <span class="kendi-hesabin">Senin hesabın</span>
+
+                                <?php elseif ($kullanici["rol"] === "admin"): ?>
+
+                                    <span class="kendi-hesabin">Korunan admin</span>
+
+                                <?php else: ?>
+
+                                    <form method="POST" class="sil-form">
+
+                                        <input
+                                            type="hidden"
+                                            name="csrf_token"
+                                            value="<?= htmlspecialchars($_SESSION["csrf_token"], ENT_QUOTES, "UTF-8") ?>"
+                                        >
+
+                                        <input
+                                            type="hidden"
+                                            name="kullanici_id"
+                                            value="<?= (int)$kullanici["id"] ?>"
+                                        >
+
+                                        <button
+                                            type="button"
+                                            class="sil-buton"
+                                            onclick="silmePenceresiAc(this)"
+                                        >
+                                            🗑️ Sil
+                                        </button>
+
+                                        <input type="hidden" name="kullanici_sil" value="1">
+
+                                    </form>
+
+                                <?php endif; ?>
+
+                            </td>
+                        </tr>
+
+                    <?php endforeach; ?>
+
+                </tbody>
+            </table>
+
+        <?php else: ?>
+
+            <div class="bos-mesaj">
+                Henüz kayıtlı kullanıcı bulunmuyor.
+            </div>
+
+        <?php endif; ?>
+
+    </div>
+
+</main>
+
+<!-- Silme Onay Penceresi -->
+
+<div class="modal" id="silmeModal">
+    <div class="modal-icerik">
+
+        <div class="modal-ikon">⚠️</div>
+
+        <h3>Kullanıcı Silinsin mi?</h3>
+
+        <p>
+            Bu kullanıcının hesabını silmek istediğine emin misin?
+            Bu işlem geri alınamaz.
+        </p>
+
+        <div class="modal-butonlar">
+            <button type="button" class="vazgec-buton" onclick="modalKapat()">
+                Vazgeç
+            </button>
+
+            <button type="button" class="onayla-buton" onclick="silmeOnayla()">
+                Evet, Sil
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+let silinecekForm = null;
+
+function silmePenceresiAc(buton) {
+    silinecekForm = buton.closest("form");
+    document.getElementById("silmeModal").classList.add("aktif");
+}
+
+function modalKapat() {
+    document.getElementById("silmeModal").classList.remove("aktif");
+    silinecekForm = null;
+}
+
+function silmeOnayla() {
+    if (silinecekForm) {
+        silinecekForm.submit();
+    }
+}
+
+document.getElementById("silmeModal").addEventListener("click", function(e) {
+    if (e.target === this) {
+        modalKapat();
+    }
+});
+</script>
+
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
+</body>
+</html>

@@ -1,0 +1,105 @@
+<?php
+if (PHP_SAPI !== "cli") {
+    http_response_code(403);
+    exit("Bu aktarÄ±m yalnÄ±zca Komut Ä°stemi'nden Ã§alÄ±ÅŸtÄ±rÄ±lÄ±r.\n");
+}
+
+require_once __DIR__ . "/config/baglanti.php";
+
+$turler = [
+    "Macera" => "adventure",
+    "Romantik" => "romance",
+    "Bilim Kurgu" => "science fiction",
+    "Gizem" => "mystery",
+    "Fantastik" => "fantasy",
+    "Polisiye" => "detective mystery",
+    "GenÃ§ Kurgu" => "young adult fiction",
+];
+
+function openLibrarySearch(string $subject): array
+{
+    $params = http_build_query([
+        "q" => "subject:\"" . $subject . "\"",
+        "lang" => "tr",
+        "limit" => 40,
+        "fields" => "key,title,author_name,first_publish_year,cover_i",
+    ]);
+    $ch = curl_init("https://openlibrary.org/search.json?" . $params);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_CONNECTTIMEOUT => 10,
+        CURLOPT_TIMEOUT => 25,
+        CURLOPT_USERAGENT => "WordNestLocalBookCatalog/1.0",
+        CURLOPT_HTTPHEADER => ["Accept: application/json"],
+    ]);
+    $body = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+    if ($body === false || $status < 200 || $status >= 300) {
+        throw new RuntimeException("Open Library yanÄ±t vermedi (HTTP " . $status . "). " . $error);
+    }
+    $data = json_decode($body, true);
+    if (!is_array($data) || !isset($data["docs"]) || !is_array($data["docs"])) {
+        throw new RuntimeException("Kitap kataloÄŸundan geÃ§erli sonuÃ§ alÄ±namadÄ±.");
+    }
+    return $data["docs"];
+}
+
+$kategoriSorgu = $db->prepare("SELECT id FROM kategoriler WHERE kategori_adi = ? LIMIT 1");
+$mevcutSorgu = $db->prepare("SELECT COUNT(*) FROM kitaplar WHERE kategori_id = ?");
+$ekle = $db->prepare(
+    "INSERT IGNORE INTO kitaplar (kategori_id, openlibrary_key, baslik, yazar, yayin_yili, kapak_id, kitap_url)
+     VALUES (?, ?, ?, ?, ?, ?, ?)"
+);
+
+foreach ($turler as $kategoriAdi => $subject) {
+    $kategoriSorgu->execute([$kategoriAdi]);
+    $kategori = $kategoriSorgu->fetch();
+    if (!$kategori) {
+        echo "AtlandÄ±: kategori bulunamadÄ± - " . $kategoriAdi . PHP_EOL;
+        continue;
+    }
+    $kategoriId = (int) $kategori["id"];
+    $mevcutSorgu->execute([$kategoriId]);
+    $mevcut = (int) $mevcutSorgu->fetchColumn();
+    if ($mevcut >= 5) {
+        echo $kategoriAdi . ": zaten 5 veya daha fazla kitap var; atlandÄ±." . PHP_EOL;
+        continue;
+    }
+
+    try {
+        $docs = openLibrarySearch($subject);
+    } catch (Throwable $e) {
+        echo $kategoriAdi . ": kitaplar alÄ±namadÄ± - " . $e->getMessage() . PHP_EOL;
+        sleep(1);
+        continue;
+    }
+
+    $seen = [];
+    $inserted = 0;
+    foreach ($docs as $doc) {
+        if ($mevcut + $inserted >= 5) break;
+        $key = (string) ($doc["key"] ?? "");
+        $title = trim((string) ($doc["title"] ?? ""));
+        if ($key === "" || $title === "") continue;
+        $normalizedTitle = mb_strtolower($title, "UTF-8");
+        if (isset($seen[$normalizedTitle])) continue;
+        $seen[$normalizedTitle] = true;
+        $authors = array_slice($doc["author_name"] ?? [], 0, 3);
+        $author = implode(", ", array_map("strval", $authors));
+        $year = isset($doc["first_publish_year"]) ? (int) $doc["first_publish_year"] : null;
+        $coverId = isset($doc["cover_i"]) ? (int) $doc["cover_i"] : null;
+        $bookUrl = "https://openlibrary.org" . $key;
+        $ekle->execute([$kategoriId, $key, mb_substr($title, 0, 255, "UTF-8"), mb_substr($author, 0, 255, "UTF-8"), $year, $coverId, $bookUrl]);
+        $inserted += $ekle->rowCount();
+    }
+
+    $mevcutSorgu->execute([$kategoriId]);
+    $toplam = (int) $mevcutSorgu->fetchColumn();
+    echo $kategoriAdi . ": " . min($toplam, 5) . "/5 kitap hazÄ±r." . PHP_EOL;
+    sleep(1);
+}
+
+echo "AktarÄ±m tamamlandÄ±. WordNest'te kitaplar.php sayfasÄ±nÄ± aÃ§." . PHP_EOL;

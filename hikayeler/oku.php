@@ -37,12 +37,24 @@ if (!$hikaye) {
 
 // Taslak hikâyeleri sadece hikâyenin sahibi veya admin görebilir.
 $girisYapanId = $_SESSION["kullanici_id"] ?? 0;
-$adminMi = ($_SESSION["rol"] ?? "") === "admin";
+$adminMi = in_array(($_SESSION["rol"] ?? ""), ["admin", "root_admin"], true);
 $sahibiMi = (int)$girisYapanId === (int)$hikaye["kullanici_id"];
 
-if ($hikaye["durum"] === "taslak" && !$adminMi && !$sahibiMi) {
+$hikayeDurumu = mb_strtolower(trim((string) $hikaye["durum"]), "UTF-8");
+if ($hikayeDurumu !== "onaylandi" && !$adminMi && !$sahibiMi) {
     header("Location: ../index.php");
     exit;
+}
+
+if ($hikayeDurumu === "onaylandi" && $girisYapanId && !$sahibiMi) {
+    try {
+        $okumaKaydi = $db->prepare("INSERT INTO okuma_gecmisi (kullanici_id, hikaye_id, son_okuma_tarihi)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON DUPLICATE KEY UPDATE son_okuma_tarihi = CURRENT_TIMESTAMP");
+        $okumaKaydi->execute([(int) $girisYapanId, (int) $hikayeId]);
+    } catch (PDOException $e) {
+        // Story reading remains available until the reading-history table is installed.
+    }
 }
 
 // Görüntülenme sayısını artır
@@ -303,6 +315,10 @@ footer {
     }
 }
 </style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece")document.documentElement.setAttribute("data-wordnest-theme","gece")}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -328,10 +344,12 @@ footer {
             >
         <?php endif; ?>
 
-        <?php if ($hikaye["durum"] === "taslak"): ?>
+        <?php if ($hikayeDurumu === "taslak"): ?>
             <span class="status">Taslak Hikâye</span>
-        <?php elseif ($hikaye["durum"] === "tamamlandi"): ?>
-            <span class="status">Tamamlandı</span>
+        <?php elseif ($hikayeDurumu === "incelemede"): ?>
+            <span class="status">Yönetici incelemesinde</span>
+        <?php elseif ($hikayeDurumu === "reddedildi"): ?>
+            <span class="status">Yayımlama reddedildi</span>
         <?php endif; ?>
 
         <h2 class="story-title">
@@ -341,7 +359,7 @@ footer {
         <div class="story-info">
 
             <span class="info-item">
-                ✍️ <?= temizle($hikaye["ad_soyad"] ?: $hikaye["kullanici_adi"]) ?>
+                ✍️ <a href="../kullanici/profil.php?id=<?= (int) $hikaye["kullanici_id"] ?>"><?= temizle($hikaye["ad_soyad"] ?: $hikaye["kullanici_adi"]) ?></a>
             </span>
 
             <span class="info-item">
@@ -407,5 +425,7 @@ footer {
     © <?= date("Y") ?> WordNest - Keyifli okumalar!
 </footer>
 
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
 </body>
 </html>

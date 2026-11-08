@@ -1,0 +1,117 @@
+<?php
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
+require_once __DIR__ . "/config/baglanti.php";
+require_once __DIR__ . "/kitap_metni_araclari.php";
+$id = filter_input(INPUT_GET, "id", FILTER_VALIDATE_INT);
+if (!$id) {
+    http_response_code(404);
+    exit("Kitap bulunamadı.");
+}
+$sorgu = $db->prepare("SELECT k.id, k.baslik, k.yazar, k.uzanti, k.dosya_adi, k.icerik, c.kategori_adi FROM kitap_dosyalari k JOIN kategoriler c ON c.id = k.kategori_id WHERE k.id = ?");
+$sorgu->execute([$id]);
+$kitap = $sorgu->fetch();
+if (!$kitap) {
+    http_response_code(404);
+    exit("Kitap bulunamadı.");
+}
+$dosyaYolu = __DIR__ . "/uploads/kitaplar/" . basename($kitap["dosya_adi"]);
+if (!is_file($dosyaYolu)) {
+    http_response_code(404);
+    exit("Kitap dosyası bulunamadı.");
+}
+
+$kayitliIcerik = trim((string) ($kitap["icerik"] ?? ""));
+$saklanan = $kayitliIcerik !== "" ? json_decode($kayitliIcerik, true) : null;
+$sayfalar = is_array($saklanan) && isset($saklanan["sayfalar"]) && is_array($saklanan["sayfalar"])
+    ? array_values(array_map("strval", $saklanan["sayfalar"]))
+    : [];
+
+if (!$sayfalar) {
+    if ($kitap["uzanti"] === "pdf") {
+        try {
+            $sayfalar = wordnestPdfSayfalariniOku($dosyaYolu);
+        } catch (Throwable $e) {
+            $sayfalar = [];
+        }
+    } else {
+        $hamMetin = trim((string) file_get_contents($dosyaYolu));
+        if (!mb_check_encoding($hamMetin, "UTF-8")) {
+            $hamMetin = mb_convert_encoding($hamMetin, "UTF-8", "Windows-1254");
+        }
+        $sayfalar = wordnestMetniSayfalaraBol($hamMetin);
+    }
+
+    if (array_filter($sayfalar, static fn($metin) => trim((string) $metin) !== "")) {
+        $json = json_encode(["v" => 1, "sayfalar" => $sayfalar], JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE);
+        if ($json !== false) {
+            $guncelle = $db->prepare("UPDATE kitap_dosyalari SET icerik = ? WHERE id = ?");
+            $guncelle->execute([$json, $id]);
+        }
+    }
+}
+
+$sayfaSayisi = count($sayfalar);
+$istenenSayfa = filter_input(INPUT_GET, "sayfa", FILTER_VALIDATE_INT);
+$sayfaNo = max(1, min($sayfaSayisi ?: 1, $istenenSayfa ?: 1));
+$sayfaMetni = $sayfalar[$sayfaNo - 1] ?? "";
+
+// Keep each signed-in reader's latest position for their profile.
+if (!empty($_SESSION["kullanici_id"]) && $sayfaSayisi > 0) {
+    try {
+        $gecmis = $db->prepare("INSERT INTO okuma_gecmisi (kullanici_id, kitap_id, son_sayfa)
+            VALUES (?, ?, ?)
+            ON DUPLICATE KEY UPDATE son_sayfa = VALUES(son_sayfa), son_okuma_tarihi = CURRENT_TIMESTAMP");
+        $gecmis->execute([(int) $_SESSION["kullanici_id"], (int) $id, (int) $sayfaNo]);
+    } catch (PDOException $e) {
+        // Reading remains available until the optional reading-history table is installed.
+    }
+}
+$kitapAdi = htmlspecialchars($kitap["baslik"], ENT_QUOTES, "UTF-8");
+$yazarAdi = htmlspecialchars($kitap["yazar"] ?: "Belirtilmedi", ENT_QUOTES, "UTF-8");
+$kategoriAdi = htmlspecialchars($kitap["kategori_adi"], ENT_QUOTES, "UTF-8");
+?>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $kitapAdi ?> - WordNest</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        body{background:#fffaf5;color:#333}.kitap-okuma-ust{background:#ff6b00;color:white;padding:16px 5%;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}.kitap-okuma-ust strong{font-size:20px}.kitap-okuma-ust a{color:white;font-family:Arial,sans-serif;font-weight:bold}.kitap-okuma{width:90%;max-width:1060px;margin:42px auto}.kitap-kimlik{text-align:center;margin:0 auto 34px}.kitap-kimlik h1{font-size:25px;color:#e85d00;margin:0 0 10px}.kitap-kimlik p{color:#777;font-size:17px;margin:0}.kitap-okuma-karti{background:#fff;border:1px solid #f2e4d9;border-radius:18px;padding:50px 5%;box-shadow:0 8px 28px rgba(50,35,25,.05);min-height:380px}.kitap-etiket{text-align:center;color:#ff6b00;font-family:Arial,sans-serif;font-size:14px;font-weight:bold;margin:0 0 18px}.kitap-baslik{text-align:center;font-family:Georgia,serif;font-size:36px;line-height:1.35;margin:0 0 20px;overflow-wrap:anywhere}.kitap-yazar{text-align:center;color:#888;font-family:Arial,sans-serif;font-size:16px;margin:0 0 30px}.kitap-ayrac{width:65px;height:3px;background:#ff6b00;border-radius:4px;margin:0 auto 42px}.kitap-metin{font-family:Georgia,'Times New Roman',serif;font-size:20px;line-height:2;color:#333;white-space:pre-wrap;overflow-wrap:anywhere}.sayfa-navigasyon{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;margin-top:30px;font-family:Arial,sans-serif}.sayfa-navigasyon a,.sayfa-pasif{display:inline-block;padding:13px 20px;border-radius:9px;text-decoration:none;font-weight:bold;text-align:center}.sayfa-onceki{justify-self:start;background:#fff0e5;color:#e85d00}.sayfa-sonraki{justify-self:end;background:#ff6b00;color:white}.sayfa-pasif{justify-self:start;background:#eee;color:#999}.sayfa-navigasyon form{display:flex;align-items:center;gap:8px;color:#777}.sayfa-navigasyon select{padding:8px;border:1px solid #e5d9d0;border-radius:7px;background:white;font:inherit}.kitap-indir{display:block;width:max-content;margin:20px auto 0;color:#e85d00;font-family:Arial,sans-serif;font-weight:bold}.kitap-alt{text-align:center;color:#999;font:13px Arial,sans-serif;margin:28px 0}.kitap-hata{background:#fff;border:1px solid #f2e4d9;border-radius:14px;padding:24px;color:#795646;text-align:center;font:16px/1.6 Arial,sans-serif}
+        @media(max-width:650px){.kitap-okuma{width:94%;margin:24px auto}.kitap-okuma-karti{padding:32px 20px}.kitap-baslik{font-size:27px}.kitap-metin{font-size:18px;line-height:1.9}.sayfa-navigasyon{grid-template-columns:1fr 1fr}.sayfa-navigasyon form{grid-column:1/-1;grid-row:1;justify-content:center}.sayfa-navigasyon a,.sayfa-pasif{width:100%;padding:12px 8px}.sayfa-onceki{grid-column:1}.sayfa-sonraki{grid-column:2}}
+    </style>
+<link rel="stylesheet" href="assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece")document.documentElement.setAttribute("data-wordnest-theme","gece")}catch(e){}</script>
+<link rel="stylesheet" href="assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
+</head>
+<body>
+<header class="kitap-okuma-ust"><strong>📚 WordNest</strong><a href="kitaplar.php">Kitaplığa dön</a></header>
+<main class="kitap-okuma">
+    <div class="kitap-kimlik"><h1><?= $kitapAdi ?></h1><p>✍️ Yazar: <?= $yazarAdi ?> · <?= $kategoriAdi ?></p></div>
+    <article class="kitap-okuma-karti">
+        <?php if ($sayfaSayisi > 0): ?>
+            <p class="kitap-etiket"><?= $sayfaNo ?>. SAYFA</p>
+            <h2 class="kitap-baslik"><?= $sayfaNo ?>. sayfa</h2>
+            <p class="kitap-yazar">WordNest Kitap Okuma Sayfası</p>
+            <div class="kitap-ayrac"></div>
+            <div class="kitap-metin"><?= htmlspecialchars($sayfaMetni, ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8") ?></div>
+        <?php else: ?>
+            <div class="kitap-hata">Bu PDF'den yazı çıkarılamadı. Taranmış/görüntü PDF'leri metin olarak açılamıyor; metin içeren bir PDF ya da TXT sürümü yükle.</div>
+        <?php endif; ?>
+    </article>
+    <?php if ($sayfaSayisi > 0): ?>
+        <nav class="sayfa-navigasyon" aria-label="Kitap sayfaları">
+            <?php if ($sayfaNo > 1): ?><a class="sayfa-onceki" href="kitap_oku.php?id=<?= (int) $id ?>&sayfa=<?= $sayfaNo - 1 ?>">← Önceki Sayfa</a><?php else: ?><span class="sayfa-pasif">İlk Sayfa</span><?php endif; ?>
+            <form method="get"><input type="hidden" name="id" value="<?= (int) $id ?>"><label for="sayfa">Sayfaya git</label><select id="sayfa" name="sayfa" onchange="this.form.submit()"><?php for ($i = 1; $i <= $sayfaSayisi; $i++): ?><option value="<?= $i ?>" <?= $i === $sayfaNo ? "selected" : "" ?>><?= $i ?> / <?= $sayfaSayisi ?></option><?php endfor; ?></select></form>
+            <?php if ($sayfaNo < $sayfaSayisi): ?><a class="sayfa-sonraki" href="kitap_oku.php?id=<?= (int) $id ?>&sayfa=<?= $sayfaNo + 1 ?>">Sonraki Sayfa →</a><?php else: ?><span class="sayfa-pasif" style="justify-self:end">Son Sayfa</span><?php endif; ?>
+        </nav>
+        <a class="kitap-indir" href="kitap_dosya.php?id=<?= (int) $id ?>&indir=1">Orijinal PDF/TXT dosyasını indir</a>
+    <?php endif; ?>
+    <p class="kitap-alt">❤️ WordNest'te keyifli okumalar!</p>
+</main>
+<script src="assets/js/gece-modu.js"></script>
+<script src="assets/js/dil-degistir.js"></script>
+</body>
+</html>

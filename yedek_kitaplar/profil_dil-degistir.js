@@ -1,0 +1,183 @@
+(function () {
+    "use strict";
+
+    var sozluk = {
+        "Ana Sayfa": "Home", "Hikayeler": "Stories", "Hikâyeler": "Stories",
+        "Kategoriler": "Categories", "Kitaplar": "Books", "Hikâyelerim": "My Stories",
+        "Hikayelerim": "My Stories", "Çıkış Yap": "Log out", "Giriş Yap": "Log in",
+        "Kayıt Ol": "Sign up", "Yönetim Paneli": "Admin panel", "Keşfet": "Discover",
+        "Hikayeleri Keşfet": "Explore stories", "Hikâyeleri Keşfet": "Explore stories",
+        "Hikaye Yaz": "Write a story", "Hikâye Yaz": "Write a story", "Yeni Hikâye Yaz": "Write a new story",
+        "Hikâyelerim": "My stories", "Kitaplığa dön": "Back to library", "Ana Sayfaya Dön": "Back to home",
+        "Hikâyeye dön": "Back to story", "Hikayeye dön": "Back to story", "Hikâyeyi Gör": "View story",
+        "Bölüm Ekle": "Add chapter", "Bölümlerim": "My chapters", "Kitabın Tamamını Sil": "Delete entire book",
+        "Kategori": "Category", "Yazar": "Author", "Bölüm sayısı": "Chapters", "Görüntülenme": "Views",
+        "Taslak": "Draft", "İncelemede": "Under review", "Onaylandı": "Approved", "Reddedildi": "Rejected",
+        "Yayımla": "Publish", "Yayımlandı": "Published", "Yayınla": "Publish", "Düzenle": "Edit",
+        "Sil": "Delete", "Kaydet": "Save", "İptal": "Cancel", "Gönder": "Submit", "Ara": "Search",
+        "Sonraki": "Next", "Önceki": "Previous", "İlk Bölüm": "First chapter", "Son Bölüm": "Last chapter",
+        "Sonraki Bölüm": "Next chapter", "Önceki Bölüm": "Previous chapter", "Sonraki Bölüm →": "Next chapter →",
+        "← Önceki Bölüm": "← Previous chapter", "Sonraki Sayfa →": "Next page →", "← Önceki Sayfa": "← Previous page",
+        "Son Sayfa": "Last page", "İlk Sayfa": "First page", "Bölüm": "Chapter", "SAYFA": "PAGE",
+        "WordNest Hikâye Okuma Sayfası": "WordNest Story Reader", "WordNest Kitap Okuma Sayfası": "WordNest Book Reader",
+        "Orijinal PDF/TXT dosyasını indir": "Download original PDF/TXT file", "Kitap ekle": "Add a book",
+        "Kitap Yükle": "Upload a book", "Dosyayı seç": "Choose file", "Dosya seçilmedi": "No file selected",
+        "Başlık": "Title", "Kitap adı": "Book title", "Kitap başlığı": "Book title", "Hikâye başlığı": "Story title",
+        "Hikaye başlığı": "Story title", "Açıklama": "Description", "İçerik": "Content", "Bölüm başlığı": "Chapter title",
+        "Bölüm içeriği": "Chapter content", "E-posta": "Email", "Şifre": "Password", "Şifremi unuttum": "Forgot password?",
+        "Beni hatırla": "Remember me", "Hesabın yok mu?": "Don't have an account?", "Hesabın var mı?": "Already have an account?",
+        "Hoş geldin": "Welcome", "Henüz kategori eklenmemiş.": "No categories have been added yet.",
+        "Henüz yayınlanmış hikaye bulunmuyor.": "There are no published stories yet.",
+        "Henüz yayınlanmış hikâye bulunmuyor.": "There are no published stories yet.",
+        "Henüz hikaye eklenmemiş.": "No stories have been added yet.", "Henüz hikâye eklenmemiş.": "No stories have been added yet.",
+        "Henüz kitap eklenmemiş.": "No books have been added yet.", "Sonuç bulunamadı.": "No results found.",
+        "BÖLÜM": "CHAPTER", "SAYFA": "PAGE", "İlk Hikâyemi Oluştur": "Create my first story",
+        "Yeni Hikâye Yaz": "Write a new story", "Taslağa Al": "Save as draft", "Taslağa Al": "Move to draft",
+        "İnceleme Bekleyenler": "Pending review", "İncelemeye Gönder": "Submit for review", "Onayla ve Yayımla": "Approve and publish",
+        "Yayımlanmış Hikâyeler": "Published stories", "Taslak Hikâyeler": "Draft stories", "Toplam Hikâye": "Total stories",
+        "Hikâye Listesi": "Story list", "Hikâye Yönetimi": "Story management", "Aramana uygun hikâye bulunamadı.": "No stories match your search.",
+        "Henüz platformda hikâye bulunmuyor.": "There are no stories on the platform yet.", "Platformdaki hikâyeleri görüntüleyebilir ve yayın durumlarını yönetebilirsin.": "View stories on the platform and manage their publication status.",
+        "İşlem": "Action", "İşlem yok": "No action", "ID": "ID", "Ad Soyad": "Full name", "Kullanıcı adı": "Username",
+        "Kitap ekle veya yönet": "Add or manage books", "Eklenen kitaplar": "Added books", "Henüz kitap eklenmedi.": "No books have been added yet.",
+        "Kaldır": "Remove", "Kategori seç": "Choose a category", "Kitabı WordNest'e yükle": "Upload a book to WordNest",
+        "Kitabın adı": "Book title", "Kitap dosyası (PDF veya TXT)": "Book file (PDF or TXT)", "Kitap Yönetimi": "Book management",
+        "WordNest'te görüntüle": "View in WordNest", "Türkçe ve uygun olduğunu kontrol ettiğin, yükleme iznin bulunan PDF veya TXT kitabı bilgisayarından seçip WordNest'e ekle. PDF, WordNest'in kendi okuma görünümünde açılır. En fazla 15 MB.": "Choose a permitted Turkish PDF or TXT file from your computer and add it to WordNest. PDFs open in WordNest's reader. Maximum file size: 15 MB.",
+        "Adminin eklediği kitapları ve yayımlanan hikâyeleri kategorilerine göre bulup WordNest içinde oku.": "Find books added by the admin and published stories by category, and read them in WordNest.",
+        "Sayfaya git": "Go to page", "Bu PDF'den yazı çıkarılamadı. Taranmış/görüntü PDF'leri metin olarak açılamıyor; metin içeren bir PDF ya da TXT sürümü yükle.": "Text could not be extracted from this PDF. Scanned/image PDFs cannot be displayed as text. Upload a text-based PDF or TXT file.",
+        "🏠 Ana Sayfaya Dön": "🏠 Back to home", "📖 Hikâyeye Geri Dön": "📖 Back to story", "📚 Hikâye Yönetimi": "📚 Story management",
+        "⚙️ Yönetim Paneline Dön": "⚙️ Back to admin panel", "İlk hikâyeni oluşturarak WordNest yolculuğuna başlayabilirsin.": "Start your WordNest journey by creating your first story.",
+        "Oluşturduğun hikâyeleri buradan yönetebilir, bölümler ekleyebilir ve yayımlayabilirsin.": "Manage your stories, add chapters, and publish them here.",
+        "Hayal gücünü kelimelere dök, hikayeni WordNest topluluğuyla paylaş.": "Turn your imagination into words and share your story with the WordNest community.",
+        "Hemen Katıl": "Join now", "Kendi hikayeni yazmaya hazır mısın?": "Ready to write your own story?", "Yazar Ol": "Become a writer",
+        "OKURLARIN SEÇİMİ": "READERS' CHOICE", "Popüler Hikayeler": "Popular stories", "Son Eklenen Hikayeler": "Recently added stories",
+        "Tümünü Gör →": "See all →", "YAZARLIĞA İLK ADIMINI AT": "TAKE YOUR FIRST STEP AS A WRITER", "WordNest. Tüm hakları saklıdır.": "WordNest. All rights reserved.",
+        "📥 Taslağa Al": "📥 Move to drafts", "🚀 Yayımla": "🚀 Publish", "📚 Bölümlerim": "📚 My chapters", "📖 Hikâyeyi Gör": "📖 View story",
+        "📖 Hikâyelerim": "📖 My stories", "📑 Bölüm sayısı:": "📑 Chapters:", "👁️ Görüntülenme:": "👁️ Views:", "🏷️ Kategori:": "🏷️ Category:",
+        "Gelecek ve teknoloji temalı hikâyeler": "Stories about the future and technology", "Hayal gücüne dayalı hikâyeler": "Stories powered by imagination",
+        "Eski kitaplar edebiyat": "Classic literature", "korku gerilim ve macera": "suspense and adventure", "Sırlar ve bilinmeyenlerle dolu hikâyeler": "Stories full of mysteries and the unknown",
+        "Macera": "Adventure", "Romantik": "Romance", "Bilim Kurgu": "Science Fiction", "Gizem": "Mystery",
+        "Fantastik": "Fantasy", "Polisiye": "Crime", "Genç Kurgu": "Young Adult", "Toplumsal edebiyat": "Social literature",
+        "Gelecek ve teknoloji temalı hikâyeler": "Stories about the future and technology",
+        "Hayal gücüne dayalı hikâyeler": "Stories powered by imagination", "Sırlarla ve bilinmeyenlerle dolu hikâyeler": "Stories full of mysteries and the unknown",
+        "Heyecan ve keşif dolu hikâyeler": "Stories full of excitement and discovery", "Aşk ve ilişkiler üzerine hikâyeler": "Stories about love and relationships",
+        "Korku gerilim ve macera": "Suspense and adventure", "Öğrenci": "Student", "Öğrenci hikâyeleri": "Student stories",
+        "Her hikayenin": "Every story has", "bir dünyası var.": "a world of its own.",
+        "Yeni dünyalar keşfet, birbirinden güzel hikayeleri oku ve kendi hikayeni yazmaya başla.": "Discover new worlds, read wonderful stories, and start writing your own.",
+        "WORDNEST'E HOŞ GELDİN": "WELCOME TO WORDNEST", "Hayal Et.": "Imagine.", "Yaz.": "Write.", "Keşfet.": "Discover.",
+        "Her kelime yeni bir başlangıçtır.": "Every word is a new beginning.", "Hikayelerin buluştuğu yer.": "Where stories meet.",
+        "WordNest'te keyifli okumalar!": "Enjoy reading on WordNest!", "İşlem hatası": "Something went wrong",
+        "E-posta doğrulama": "Email verification", "Doğrulama kodu": "Verification code", "Kodu doğrula": "Verify code",
+        "Tekrar gönder": "Resend", "Güvenli çıkış": "Secure logout", "Evet": "Yes", "Hayır": "No",
+        "Şifre tekrar": "Confirm password", "Şifreni tekrar gir": "Re-enter your password", "Şifren": "Your password",
+        "E-posta adresi": "Email address", "E-posta adresin": "Your email address", "Kullanıcı adı veya e-posta": "Username or email",
+        "Adın": "Your name", "Soyadın": "Your surname", "Biyografi": "Biography", "Profil fotoğrafı": "Profile photo",
+        "E-posta adresi geçerli değil.": "Please enter a valid email address.", "Bu alan zorunludur.": "This field is required.",
+        "Şifre en az 8 karakter olmalıdır.": "Password must be at least 8 characters.", "Şifreler eşleşmiyor.": "Passwords do not match.",
+        "Bu kullanıcı adı zaten kullanılıyor.": "This username is already taken.", "Bu e-posta adresi zaten kayıtlı.": "This email address is already registered.",
+        "Kayıt başarılı.": "Registration successful.", "Giriş başarılı.": "Login successful.", "E-posta adresin doğrulandı.": "Your email address has been verified.",
+        "Onay bekliyor": "Awaiting approval", "Yönetici incelemesinde": "Under admin review", "Hikâyen başarıyla yayımlandı.": "Your story has been published.",
+        "Hikâyen yönetici incelemesine gönderildi. Onaylanınca kategorilerde yayımlanacak.": "Your story was sent for admin review. It will appear in categories after approval.",
+        "Kitaplar - WordNest": "Books - WordNest", "Hikâyelerim - WordNest": "My Stories - WordNest", "Hikâyeler - WordNest": "Stories - WordNest",
+        "Kitap Yönetimi - WordNest": "Book management - WordNest", "Hikâye Yönetimi - WordNest": "Story management - WordNest"
+    };
+
+    var saklananMetinler = new WeakMap();
+    var dugme;
+    var dil = "tr";
+    try { dil = localStorage.getItem("wordnest-dil") || "tr"; } catch (e) {}
+
+    function cevirMetin(metin) {
+        var bas = metin.match(/^\s*/)[0];
+        var son = metin.match(/\s*$/)[0];
+        var temiz = metin.trim();
+        var bolumSayfasi = temiz.match(/^(\d+\.\s*)(BÖLÜM|SAYFA)$/iu);
+        if (bolumSayfasi) return bas + bolumSayfasi[1] + (bolumSayfasi[2].toLocaleUpperCase("tr") === "BÖLÜM" ? "CHAPTER" : "PAGE") + son;
+        if (Object.prototype.hasOwnProperty.call(sozluk, temiz)) return bas + sozluk[temiz] + son;
+        var sus = temiz.match(/^([^\p{L}\p{N}]*)([\s\S]*?)([^\p{L}\p{N}]*)$/u);
+        if (sus) {
+            var susAnlam = Object.keys(sozluk).find(function (anahtar) { return anahtar.toLocaleLowerCase("tr") === sus[2].toLocaleLowerCase("tr"); });
+            if (susAnlam) return bas + sus[1] + sozluk[susAnlam] + sus[3] + son;
+        }
+        if (/^Merhaba,\s*/i.test(temiz)) return bas + temiz.replace(/^Merhaba,/i, "Hello,") + son;
+        var etiket = temiz.match(/^(.*?)(Kategori|Yazar|Görüntülenme|Bölüm sayısı)\s*:/i);
+        if (etiket) {
+            var etiketCeviri = { "Kategori": "Category", "Yazar": "Author", "Görüntülenme": "Views", "Bölüm sayısı": "Chapters" };
+            var turkceEtiket = etiket[2].toLocaleLowerCase("tr");
+            var ingilizceEtiket = etiketCeviri[Object.keys(etiketCeviri).find(function (k) { return k.toLocaleLowerCase("tr") === turkceEtiket; })];
+            return bas + etiket[1] + ingilizceEtiket + ":" + temiz.slice(etiket[0].length) + son;
+        }
+        return metin;
+    }
+
+    function cevirSayfa() {
+        var ingilizce = dil === "en";
+        document.documentElement.setAttribute("data-wordnest-language", ingilizce ? "en" : "tr");
+        document.documentElement.lang = ingilizce ? "en" : "tr";
+        var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        var dugumler = [];
+        while (walker.nextNode()) dugumler.push(walker.currentNode);
+        dugumler.forEach(function (dugum) {
+            var ebeveyn = dugum.parentElement;
+            if (!ebeveyn || ebeveyn.closest("script,style,textarea,[contenteditable='true'],.bolum-icerik,.kitap-metin,.story-content,.kitap-aciklama")) return;
+            if (!saklananMetinler.has(dugum)) saklananMetinler.set(dugum, dugum.nodeValue);
+            var asil = saklananMetinler.get(dugum);
+            dugum.nodeValue = ingilizce ? cevirMetin(asil) : asil;
+        });
+
+        document.querySelectorAll("input[placeholder],textarea[placeholder],input[type='submit'],input[type='button'],[title],[aria-label]").forEach(function (el) {
+            ["placeholder", "title", "aria-label", "value"].forEach(function (ozellik) {
+                if (!el.hasAttribute(ozellik)) return;
+                var anahtar = "wordnestOriginal" + ozellik;
+                if (!el.dataset[anahtar]) el.dataset[anahtar] = el.getAttribute(ozellik);
+                var asil = el.dataset[anahtar];
+                el.setAttribute(ozellik, ingilizce ? cevirMetin(asil) : asil);
+            });
+        });
+
+        if (document.title) {
+            if (!document.documentElement.dataset.wordnestOriginalTitle) document.documentElement.dataset.wordnestOriginalTitle = document.title;
+            document.title = ingilizce ? cevirMetin(document.documentElement.dataset.wordnestOriginalTitle) : document.documentElement.dataset.wordnestOriginalTitle;
+        }
+
+        document.querySelectorAll(".wordnest-tema-dugmesi").forEach(function (temaDugmesi) {
+            var gece = document.documentElement.getAttribute("data-wordnest-theme") === "gece";
+            temaDugmesi.textContent = ingilizce ? (gece ? "☀️ Day mode" : "🌙 Night mode") : (gece ? "☀️ Gündüz modu" : "🌙 Gece modu");
+        });
+        dugme.textContent = ingilizce ? "İNG" : "TR";
+        dugme.title = ingilizce ? "Switch to Turkish" : "Türkçe arayüz";
+        dugme.setAttribute("aria-label", dugme.title);
+        var geceModu = document.documentElement.getAttribute("data-wordnest-theme") === "gece";
+        dugme.style.backgroundColor = geceModu ? "#302a25" : "#fff7f0";
+        dugme.style.color = geceModu ? "#fff1e5" : "#a84612";
+        dugme.style.borderColor = geceModu ? "#6a5545" : "#df6a21";
+    }
+
+    dugme = document.createElement("button");
+    dugme.type = "button";
+    dugme.className = "wordnest-dil-dugmesi";
+    dugme.style.minWidth = "58px";
+    dugme.style.minHeight = "34px";
+    dugme.style.padding = "6px 10px";
+    dugme.style.border = "1px solid #df6a21";
+    dugme.style.borderRadius = "8px";
+    dugme.style.backgroundColor = "#fff7f0";
+    dugme.style.color = "#a84612";
+    dugme.style.font = "700 13px Arial, sans-serif";
+    dugme.style.position = "fixed";
+    dugme.style.top = "12px";
+    dugme.style.left = "14px";
+    dugme.style.zIndex = "100000";
+    dugme.addEventListener("click", function () {
+        dil = dil === "en" ? "tr" : "en";
+        try { localStorage.setItem("wordnest-dil", dil); } catch (e) {}
+        cevirSayfa();
+    });
+    var konum = document.querySelector(".ust-menu .menu-icerik") || document.querySelector(".kitap-okuma-ust") || document.querySelector(".nav-buttons");
+    if (konum) {
+        dugme.style.position = "static";
+        dugme.style.marginRight = "10px";
+        konum.insertBefore(dugme, konum.firstChild);
+    }
+    else document.body.appendChild(dugme);
+    cevirSayfa();
+})();

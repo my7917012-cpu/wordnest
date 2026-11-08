@@ -1,0 +1,640 @@
+
+<?php
+session_start();
+
+require_once __DIR__ . "/../config/baglanti.php";
+
+if (!isset($_SESSION["kullanici_id"])) {
+    header("Location: ../kullanici/giris.php");
+    exit;
+}
+
+$kullaniciId = (int) $_SESSION["kullanici_id"];
+$mesaj = "";
+$mesajTuru = "basari";
+
+if (empty($_SESSION["csrf_token"])) {
+    $_SESSION["csrf_token"] = bin2hex(random_bytes(32));
+}
+
+$csrfToken = $_SESSION["csrf_token"];
+
+/* HİKÂYE İŞLEMLERİ */
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+
+    if (
+        !isset($_POST["csrf_token"]) ||
+        !hash_equals($csrfToken, $_POST["csrf_token"])
+    ) {
+        $mesaj = "Güvenlik doğrulaması başarısız oldu. Sayfayı yenileyip tekrar deneyin.";
+        $mesajTuru = "hata";
+    } else {
+
+        $hikayeId = isset($_POST["hikaye_id"])
+            ? (int) $_POST["hikaye_id"]
+            : 0;
+
+        $islem = $_POST["islem"] ?? "";
+
+        try {
+
+            /* HİKÂYENİN SAHİBİNİ KONTROL ET */
+            $kontrol = $db->prepare(
+                "SELECT id, durum
+                 FROM hikayeler
+                 WHERE id = ? AND kullanici_id = ?"
+            );
+            $kontrol->execute([$hikayeId, $kullaniciId]);
+            $hikaye = $kontrol->fetch();
+
+            if (!$hikaye) {
+                throw new Exception("Hikâye bulunamadı veya bu hikâye size ait değil.");
+            }
+
+            /* HİKÂYEYİ YAYIMLA */
+            if ($islem === "yayimla") {
+
+                $bolumKontrol = $db->prepare(
+                    "SELECT COUNT(*)
+                     FROM bolumler
+                     WHERE hikaye_id = ?"
+                );
+                $bolumKontrol->execute([$hikayeId]);
+                $bolumSayisi = (int) $bolumKontrol->fetchColumn();
+
+                if ($bolumSayisi < 1) {
+                    throw new Exception("Hikâyeyi yayımlamak için en az bir bölüm eklemelisin.");
+                }
+
+                $guncelle = $db->prepare(
+                    "UPDATE hikayeler
+                     SET durum = 'yayinda',
+                         guncelleme_tarihi = NOW()
+                     WHERE id = ? AND kullanici_id = ?"
+                );
+                $guncelle->execute([$hikayeId, $kullaniciId]);
+
+                $mesaj = "Hikâyen başarıyla yayımlandı.";
+            }
+
+            /* HİKÂYEYİ TASLAĞA AL */
+            elseif ($islem === "taslaga_al") {
+
+                $guncelle = $db->prepare(
+                    "UPDATE hikayeler
+                     SET durum = 'taslak',
+                         guncelleme_tarihi = NOW()
+                     WHERE id = ? AND kullanici_id = ?"
+                );
+                $guncelle->execute([$hikayeId, $kullaniciId]);
+
+                $mesaj = "Hikâyen taslağa alındı.";
+            }
+
+            /* HİKÂYENİN TAMAMINI SİL */
+            elseif ($islem === "sil") {
+
+                $db->beginTransaction();
+
+                // Silinmesi gereken ilişkili tablolar
+                $silmeTablolari = [
+                    "favoriler",
+                    "yorumlar",
+                    "puanlar",
+                    "bolumler"
+                ];
+
+                // Veritabanında gerçekten bulunan tabloları kontrol et
+                $tabloKontrol = $db->prepare(
+                    "SELECT COUNT(*)
+                     FROM information_schema.tables
+                     WHERE table_schema = DATABASE()
+                     AND table_name = ?"
+                );
+
+                foreach ($silmeTablolari as $tablo) {
+
+                    $tabloKontrol->execute([$tablo]);
+                    $tabloVarMi = (int) $tabloKontrol->fetchColumn();
+
+                    // Tablo varsa ilişkili kayıtları sil
+                    if ($tabloVarMi > 0) {
+
+                        $sil = $db->prepare(
+                            "DELETE FROM `$tablo` WHERE hikaye_id = ?"
+                        );
+
+                        $sil->execute([$hikayeId]);
+                    }
+                }
+
+                // Son olarak hikâyeyi sil
+                $silHikaye = $db->prepare(
+                    "DELETE FROM hikayeler
+                     WHERE id = ? AND kullanici_id = ?"
+                );
+
+                $silHikaye->execute([$hikayeId, $kullaniciId]);
+
+                if ($silHikaye->rowCount() !== 1) {
+                    throw new Exception("Hikâye silinemedi. Hikâye kaydı bulunamadı.");
+                }
+
+                $db->commit();
+
+                $mesaj = "Hikâyen ve bütün bölümleri başarıyla silindi.";
+            }
+
+            else {
+                throw new Exception("Geçersiz işlem.");
+            }
+
+        } catch (Throwable $e) {
+
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+
+            $mesaj = "İşlem hatası: " . $e->getMessage();
+            $mesajTuru = "hata";
+        }
+    }
+}
+
+/* KULLANICININ HİKÂYELERİNİ GETİR */
+$sorgu = $db->prepare(
+    "SELECT
+        h.*,
+        k.kategori_adi,
+        COUNT(DISTINCT b.id) AS bolum_sayisi
+     FROM hikayeler h
+     LEFT JOIN kategoriler k ON h.kategori_id = k.id
+     LEFT JOIN bolumler b ON h.id = b.hikaye_id
+     WHERE h.kullanici_id = ?
+     GROUP BY h.id
+     ORDER BY h.olusturma_tarihi DESC"
+);
+
+$sorgu->execute([$kullaniciId]);
+$hikayeler = $sorgu->fetchAll();
+?>
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hikâyelerim - WordNest</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #fffaf5;
+            color: #333;
+        }
+
+        header {
+            background: #ff6b00;
+            padding: 18px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        header h1 {
+            color: white;
+            font-size: 27px;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .nav-buttons a {
+            text-decoration: none;
+            padding: 11px 16px;
+            border-radius: 9px;
+            font-weight: bold;
+            border: 2px solid white;
+            transition: 0.2s;
+        }
+
+        .home-btn {
+            background: white;
+            color: #e85d00;
+        }
+
+        .add-btn {
+            background: #e85d00;
+            color: white;
+        }
+
+        .nav-buttons a:hover {
+            opacity: 0.85;
+            transform: translateY(-2px);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1150px;
+            margin: 35px auto;
+        }
+
+        .page-title {
+            color: #e85d00;
+            margin-bottom: 10px;
+            font-size: 30px;
+        }
+
+        .description {
+            color: #777;
+            margin-bottom: 25px;
+        }
+
+        .mesaj {
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .basari {
+            background: #e7f7e9;
+            color: #247a32;
+            border: 1px solid #b7e2bd;
+        }
+
+        .hata {
+            background: #ffe9e9;
+            color: #b00020;
+            border: 1px solid #f2b8b8;
+        }
+
+        .hikaye-listesi {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 22px;
+        }
+
+        .hikaye-kart {
+            background: white;
+            border-radius: 13px;
+            padding: 18px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.07);
+            border: 1px solid #f2e4d9;
+        }
+
+        .kapak {
+            width: 100%;
+            height: 190px;
+            object-fit: cover;
+            border-radius: 9px;
+            margin-bottom: 15px;
+            background: #fff0e5;
+        }
+
+        .kapak-yok {
+            width: 100%;
+            height: 100px;
+            background: #fff0e5;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #e85d00;
+            font-size: 42px;
+            margin-bottom: 15px;
+        }
+
+        .hikaye-kart h2 {
+            color: #e85d00;
+            margin-bottom: 9px;
+            font-size: 21px;
+            overflow-wrap: anywhere;
+        }
+
+        .aciklama {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 12px;
+            overflow-wrap: anywhere;
+        }
+
+        .bilgi {
+            font-size: 14px;
+            color: #777;
+            margin: 7px 0;
+        }
+
+        .durum {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 8px 0 13px;
+        }
+
+        .taslak {
+            background: #fff0c9;
+            color: #916000;
+        }
+
+        .yayinda {
+            background: #dff5e4;
+            color: #247a32;
+        }
+
+        .tamamlandi {
+            background: #e5e5ff;
+            color: #4545a0;
+        }
+
+        .butonlar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .buton {
+            border: none;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            color: white;
+            text-align: center;
+            flex: 1 1 auto;
+        }
+
+        .bolum-ekle {
+            background: #ff6b00;
+        }
+
+        .bolumler {
+            background: #e85d00;
+        }
+
+        .oku {
+            background: #388e3c;
+        }
+
+        .yayimla {
+            background: #269447;
+        }
+
+        .taslaga-al {
+            background: #777;
+        }
+
+        .sil {
+            background: #c62828;
+        }
+
+        .buton:hover {
+            opacity: 0.85;
+        }
+
+        .bos {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.06);
+        }
+
+        .bos h2 {
+            color: #e85d00;
+            margin-bottom: 12px;
+        }
+
+        .bos a {
+            display: inline-block;
+            margin-top: 18px;
+            padding: 12px 20px;
+            background: #ff6b00;
+            color: white;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        @media (max-width: 600px) {
+            header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            header h1 {
+                text-align: center;
+            }
+
+            .nav-buttons {
+                flex-direction: column;
+            }
+
+            .nav-buttons a {
+                text-align: center;
+            }
+
+            .container {
+                width: 92%;
+                margin: 25px auto;
+            }
+
+            .page-title {
+                font-size: 25px;
+            }
+
+            .buton {
+                flex-basis: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>📚 WordNest</h1>
+
+    <div class="nav-buttons">
+        <a href="../index.php" class="home-btn">🏠 Ana Sayfaya Dön</a>
+        <a href="ekle.php" class="add-btn">✍️ Yeni Hikâye Yaz</a>
+    </div>
+</header>
+
+<div class="container">
+
+    <h1 class="page-title">📖 Hikâyelerim</h1>
+    <p class="description">
+        Oluşturduğun hikâyeleri buradan yönetebilir, bölümler ekleyebilir ve yayımlayabilirsin.
+    </p>
+
+    <?php if ($mesaj !== ""): ?>
+        <div class="mesaj <?= htmlspecialchars($mesajTuru) ?>">
+            <?= htmlspecialchars($mesaj) ?>
+        </div>
+    <?php endif; ?>
+
+    <?php if (count($hikayeler) > 0): ?>
+
+        <div class="hikaye-listesi">
+
+            <?php foreach ($hikayeler as $hikaye): ?>
+                <?php $durumHikaye = mb_strtolower(trim((string) $hikaye["durum"]), "UTF-8"); ?>
+
+                <div class="hikaye-kart">
+
+                    <?php if (!empty($hikaye["kapak_resmi"])): ?>
+                        <img
+                            class="kapak"
+                            src="../uploads/kapaklar/<?= htmlspecialchars(basename($hikaye["kapak_resmi"])) ?>"
+                            alt="Hikâye kapağı"
+                        >
+                    <?php else: ?>
+                        <div class="kapak-yok">📖</div>
+                    <?php endif; ?>
+
+                    <h2>
+                        <?= htmlspecialchars($hikaye["baslik"]) ?>
+                    </h2>
+
+                    <p class="aciklama">
+                        <?= htmlspecialchars(mb_strimwidth($hikaye["aciklama"] ?? "", 0, 130, "...", "UTF-8")) ?>
+                    </p>
+
+                    <p class="bilgi">
+                        🏷️ Kategori:
+                        <?= htmlspecialchars($hikaye["kategori_adi"] ?? "Kategorisiz") ?>
+                    </p>
+
+                    <p class="bilgi">
+                        📑 Bölüm sayısı:
+                        <?= (int) $hikaye["bolum_sayisi"] ?>
+                    </p>
+
+                    <p class="bilgi">
+                        👁️ Görüntülenme:
+                        <?= (int) $hikaye["goruntulenme"] ?>
+                    </p>
+
+                    <span class="durum <?= in_array($durumHikaye, ["yayinda", "tamamlandi"], true) ? $durumHikaye : "taslak" ?>">
+                        <?php
+                        if ($durumHikaye === "yayinda") {
+                            echo "🟢 Yayımlanmış";
+                        } elseif ($durumHikaye === "tamamlandi") {
+                            echo "🔵 Tamamlandı";
+                        } else {
+                            echo "🟡 Taslak";
+                        }
+                        ?>
+                    </span>
+
+                    <div class="butonlar">
+
+                        <a
+                            href="bolum_ekle.php?hikaye_id=<?= (int) $hikaye["id"] ?>"
+                            class="buton bolum-ekle"
+                        >
+                            ➕ Bölüm Ekle
+                        </a>
+
+                        <a
+                            href="bolumlerim.php?hikaye_id=<?= (int) $hikaye["id"] ?>"
+                            class="buton bolumler"
+                        >
+                            📚 Bölümlerim
+                        </a>
+
+                        <a
+                            href="oku.php?id=<?= (int) $hikaye["id"] ?>"
+                            class="buton oku"
+                        >
+                            📖 Hikâyeyi Gör
+                        </a>
+
+                    </div>
+
+                    <div class="butonlar">
+
+                        <?php if (!in_array($durumHikaye, ["yayinda", "tamamlandi"], true)): ?>
+
+                            <form method="POST" style="flex:1;">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                                <input type="hidden" name="hikaye_id" value="<?= (int) $hikaye["id"] ?>">
+                                <input type="hidden" name="islem" value="yayimla">
+
+                                <button type="submit" class="buton yayimla" style="width:100%;">
+                                    🚀 Yayımla
+                                </button>
+                            </form>
+
+                        <?php elseif ($durumHikaye === "yayinda"): ?>
+
+                            <form method="POST" style="flex:1;">
+                                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                                <input type="hidden" name="hikaye_id" value="<?= (int) $hikaye["id"] ?>">
+                                <input type="hidden" name="islem" value="taslaga_al">
+
+                                <button type="submit" class="buton taslaga-al" style="width:100%;">
+                                    📥 Taslağa Al
+                                </button>
+                            </form>
+
+                        <?php endif; ?>
+
+                    </div>
+
+                    <div class="butonlar">
+
+                        <form
+                            method="POST"
+                            style="width:100%;"
+                            onsubmit="return confirm('Bu hikâyeyi ve bütün bölümlerini kalıcı olarak silmek istediğine emin misin? Bu işlem geri alınamaz.');"
+                        >
+                            <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+                            <input type="hidden" name="hikaye_id" value="<?= (int) $hikaye["id"] ?>">
+                            <input type="hidden" name="islem" value="sil">
+
+                            <button type="submit" class="buton sil" style="width:100%;">
+                                🗑️ Kitabın Tamamını Sil
+                            </button>
+                        </form>
+
+                    </div>
+
+                </div>
+
+            <?php endforeach; ?>
+
+        </div>
+
+    <?php else: ?>
+
+        <div class="bos">
+            <h2>Henüz bir hikâyen yok. 📚</h2>
+            <p>İlk hikâyeni oluşturarak WordNest yolculuğuna başlayabilirsin.</p>
+            <a href="ekle.php">✍️ İlk Hikâyemi Oluştur</a>
+        </div>
+
+    <?php endif; ?>
+
+</div>
+
+</body>
+</html>

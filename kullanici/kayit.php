@@ -1,68 +1,55 @@
-
 <?php
 session_start();
 
 require_once __DIR__ . "/../config/baglanti.php";
+require_once __DIR__ . "/../config/email_sender.php";
 
 $hata = "";
 $basari = "";
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-
     $adSoyad = trim($_POST["ad_soyad"] ?? "");
     $kullaniciAdi = trim($_POST["kullanici_adi"] ?? "");
     $email = trim($_POST["email"] ?? "");
     $sifre = $_POST["sifre"] ?? "";
     $sifreTekrar = $_POST["sifre_tekrar"] ?? "";
 
-    if (
-        empty($adSoyad) ||
-        empty($kullaniciAdi) ||
-        empty($email) ||
-        empty($sifre) ||
-        empty($sifreTekrar)
-    ) {
+    if ($adSoyad === "" || $kullaniciAdi === "" || $email === "" || $sifre === "" || $sifreTekrar === "") {
         $hata = "Lütfen bütün alanları doldurun.";
-
     } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $hata = "Geçerli bir e-posta adresi girin.";
-
     } elseif (strlen($sifre) < 6) {
         $hata = "Şifreniz en az 6 karakter olmalıdır.";
-
     } elseif ($sifre !== $sifreTekrar) {
         $hata = "Şifreler birbiriyle uyuşmuyor.";
-
     } else {
-
-        $kontrol = $db->prepare("
-            SELECT id FROM kullanicilar
-            WHERE kullanici_adi = ? OR email = ?
-        ");
-
+        $kontrol = $db->prepare("SELECT id FROM kullanicilar WHERE kullanici_adi = ? OR email = ? LIMIT 1");
         $kontrol->execute([$kullaniciAdi, $email]);
 
         if ($kontrol->fetch()) {
             $hata = "Bu kullanıcı adı veya e-posta zaten kullanılıyor.";
-
         } else {
-
+            $kod = (string) random_int(100000, 999999);
+            $kodHash = hash("sha256", $kod);
             $sifreHash = password_hash($sifre, PASSWORD_DEFAULT);
 
-            $ekle = $db->prepare("
-                INSERT INTO kullanicilar
-                (kullanici_adi, ad_soyad, email, sifre)
-                VALUES (?, ?, ?, ?)
-            ");
+            $ekle = $db->prepare(
+                "INSERT INTO kullanicilar
+                 (kullanici_adi, ad_soyad, email, sifre, email_dogrulandi, email_dogrulama_hash, email_dogrulama_son_tarih)
+                 VALUES (?, ?, ?, ?, 0, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))"
+            );
+            $ekle->execute([$kullaniciAdi, $adSoyad, $email, $sifreHash, $kodHash]);
 
-            $ekle->execute([
-                $kullaniciAdi,
-                $adSoyad,
-                $email,
-                $sifreHash
-            ]);
+            try {
+                wordnestSendVerificationCode($email, $adSoyad, $kod);
+                $gonderildi = "1";
+            } catch (Throwable $e) {
+                error_log("WordNest doğrulama e-postası gönderilemedi: " . $e->getMessage());
+                $gonderildi = "0";
+            }
 
-            $basari = "Kaydınız başarıyla oluşturuldu! Giriş yapabilirsiniz.";
+            header("Location: email_dogrula.php?email=" . rawurlencode($email) . "&gonderildi=" . $gonderildi);
+            exit;
         }
     }
 }
@@ -239,6 +226,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
         }
     </style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece"){document.documentElement.setAttribute("data-wordnest-theme","gece")}}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -345,5 +336,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
 </main>
 
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
 </body>
 </html>

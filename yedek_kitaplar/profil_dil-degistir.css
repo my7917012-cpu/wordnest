@@ -1,0 +1,60 @@
+.wordnest-dil-dugmesi {
+    position: fixed;
+    top: 12px;
+    left: 14px;
+    border: 1px solid #df6a21;
+    min-width: 58px;
+    min-height: 34px;
+    border-radius: 8px;
+    padding: 6px 10px;
+    background: #fff7f0 !important;
+    color: #000 !important;
+    font: 700 13px Arial, sans-serif;
+    font-size: 0 !important;
+    text-align: center;
+    line-height: 1.2;
+    cursor: pointer;
+    z-index: 100000;
+}
+
+.wordnest-dil-dugmesi::after {
+    content: "TR";
+    display: inline-block;
+    color: #000 !important;
+    font: 700 13px Arial, sans-serif !important;
+    line-height: 1.2;
+}
+
+html[data-wordnest-language="en"] .wordnest-dil-dugmesi::after {
+    content: "İNG";
+}
+
+.ust-menu .menu-icerik > .wordnest-dil-dugmesi,
+.kitap-okuma-ust > .wordnest-dil-dugmesi,
+.nav-buttons > .wordnest-dil-dugmesi {
+    position: static;
+    flex: 0 0 auto;
+    align-self: center;
+    margin-right: 10px;
+}
+
+.wordnest-dil-dugmesi:hover {
+    background: #ffeadb;
+}
+
+html[data-wordnest-language="en"] .wordnest-dil-dugmesi {
+    background: #fff7f0 !important;
+    color: #000 !important;
+    border-color: #df6a21;
+}
+
+@media (max-width: 600px) {
+    .wordnest-dil-dugmesi {
+        top: 8px;
+        left: 8px;
+        min-width: 54px;
+        min-height: 32px;
+        padding: 5px 9px;
+        font-size: 12px;
+    }
+}

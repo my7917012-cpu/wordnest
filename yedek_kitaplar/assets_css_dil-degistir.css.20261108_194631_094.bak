@@ -1,0 +1,42 @@
+.wordnest-dil-dugmesi {
+    position: fixed;
+    top: 12px;
+    left: 14px;
+    border: 1px solid #df6a21;
+    border-radius: 7px;
+    padding: 5px 9px;
+    background: #fff7f0;
+    color: #a84612;
+    font: 700 12px Arial, sans-serif;
+    line-height: 1.2;
+    cursor: pointer;
+    z-index: 100000;
+}
+
+.ust-menu .menu-icerik > .wordnest-dil-dugmesi,
+.kitap-okuma-ust > .wordnest-dil-dugmesi,
+.nav-buttons > .wordnest-dil-dugmesi {
+    position: static;
+    flex: 0 0 auto;
+    align-self: center;
+    margin-right: 10px;
+}
+
+.wordnest-dil-dugmesi:hover {
+    background: #ffeadb;
+}
+
+html[data-wordnest-language="en"] .wordnest-dil-dugmesi {
+    background: #302a25;
+    color: #fff1e5;
+    border-color: #6a5545;
+}
+
+@media (max-width: 600px) {
+    .wordnest-dil-dugmesi {
+        top: 8px;
+        left: 8px;
+        padding: 4px 7px;
+        font-size: 11px;
+    }
+}

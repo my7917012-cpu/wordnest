@@ -5,7 +5,7 @@ session_start();
 require_once __DIR__ . "/../config/baglanti.php";
 
 // Sadece admin kullanıcıları girebilir.
-if (!isset($_SESSION["kullanici_id"]) || ($_SESSION["rol"] ?? "") !== "admin") {
+if (!isset($_SESSION["kullanici_id"]) || !in_array(($_SESSION["rol"] ?? ""), ["admin", "root_admin"], true)) {
     header("Location: ../kullanici/giris.php");
     exit;
 }
@@ -222,6 +222,10 @@ footer {
     }
 }
 </style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece"){document.documentElement.setAttribute("data-wordnest-theme","gece")}}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -304,6 +308,10 @@ footer {
                     Platformdaki hikâyeleri görüntüle ve yayın durumlarını yönet.
                 </span>
             </a>
+            <a href="kitap_ekle.php" class="management-item">
+                <strong>📚 Kitap Yönetimi</strong>
+                <span>Türkçe ve uygun kitapları PDF veya TXT olarak yükle, düzenle ve kaldır.</span>
+            </a>
 
         </div>
     </section>
@@ -314,5 +322,7 @@ footer {
     © <?= date("Y") ?> WordNest - Yönetim Paneli
 </footer>
 
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
 </body>
 </html>

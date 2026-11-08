@@ -7,7 +7,7 @@ require_once __DIR__ . "/../config/baglanti.php";
 // Admin kontrolü
 if (
     !isset($_SESSION["kullanici_id"]) ||
-    ($_SESSION["rol"] ?? "") !== "admin"
+    !in_array(($_SESSION["rol"] ?? ""), ["admin", "root_admin"], true)
 ) {
     header("Location: ../kullanici/giris.php");
     exit;
@@ -34,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $hikayeId = filter_input(INPUT_POST, "hikaye_id", FILTER_VALIDATE_INT);
         $yeniDurum = $_POST["yeni_durum"] ?? "";
 
-        if (!$hikayeId || !in_array($yeniDurum, ["taslak", "yayinda"], true)) {
+        if (!$hikayeId || !in_array($yeniDurum, ["taslak", "incelemede", "onaylandi", "reddedildi"], true)) {
             $mesaj = "Geçersiz işlem!";
             $mesajTuru = "hata";
         } else {
@@ -48,9 +48,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $guncelle->execute([$yeniDurum, $hikayeId]);
 
                 if ($guncelle->rowCount() > 0) {
-                    $mesaj = $yeniDurum === "yayinda"
-                        ? "Hikâye başarıyla yayınlandı."
-                        : "Hikâye taslağa alındı.";
+                    $mesajlar = [
+                        "taslak" => "Hikâye taslağa alındı.",
+                        "incelemede" => "Hikâye incelemeye gönderildi.",
+                        "onaylandi" => "Hikâye onaylandı ve yayımlandı.",
+                        "reddedildi" => "Hikâye reddedildi."
+                    ];
+                    $mesaj = $mesajlar[$yeniDurum];
                     $mesajTuru = "basarili";
                 } else {
                     $kontrol = $db->prepare("SELECT id, durum FROM hikayeler WHERE id = ?");
@@ -97,17 +101,21 @@ $hikayeler = $sorgu->fetchAll();
 
 // İstatistikler
 $toplamHikaye = count($hikayeler);
-$yayindakiHikaye = 0;
+$onayliHikaye = 0;
+$incelemedekiHikaye = 0;
 $taslakHikaye = 0;
-$tamamlananHikaye = 0;
+$reddedilenHikaye = 0;
 
 foreach ($hikayeler as $hikaye) {
-    if ($hikaye["durum"] === "yayinda") {
-        $yayindakiHikaye++;
-    } elseif ($hikaye["durum"] === "taslak") {
+    $durumAdmin = mb_strtolower(trim((string) $hikaye["durum"]), "UTF-8");
+    if ($durumAdmin === "onaylandi") {
+        $onayliHikaye++;
+    } elseif ($durumAdmin === "incelemede") {
+        $incelemedekiHikaye++;
+    } elseif ($durumAdmin === "reddedildi") {
+        $reddedilenHikaye++;
+    } elseif ($durumAdmin === "taslak") {
         $taslakHikaye++;
-    } elseif ($hikaye["durum"] === "tamamlandi") {
-        $tamamlananHikaye++;
     }
 }
 ?>
@@ -339,9 +347,19 @@ foreach ($hikayeler as $hikaye) {
             font-weight: bold;
         }
 
-        .durum.yayinda {
+        .durum.onaylandi {
             background: #e5f7eb;
             color: #218344;
+        }
+
+        .durum.incelemede {
+            background: #e5efff;
+            color: #315b9a;
+        }
+
+        .durum.reddedildi {
+            background: #ffe4e4;
+            color: #9b2e2e;
         }
 
         .durum.taslak {
@@ -439,6 +457,10 @@ foreach ($hikayeler as $hikaye) {
             }
         }
     </style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece"){document.documentElement.setAttribute("data-wordnest-theme","gece")}}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -483,8 +505,8 @@ foreach ($hikayeler as $hikaye) {
         </div>
 
         <div class="istatistik-kart">
-            <p>Yayındaki Hikâyeler</p>
-            <h2><?= $yayindakiHikaye ?></h2>
+            <p>Yayımlanmış Hikâyeler</p>
+            <h2><?= $onayliHikaye ?></h2>
         </div>
 
         <div class="istatistik-kart">
@@ -493,8 +515,8 @@ foreach ($hikayeler as $hikaye) {
         </div>
 
         <div class="istatistik-kart">
-            <p>Tamamlanan Hikâyeler</p>
-            <h2><?= $tamamlananHikaye ?></h2>
+            <p>İnceleme Bekleyenler</p>
+            <h2><?= $incelemedekiHikaye ?></h2>
         </div>
 
     </section>
@@ -562,69 +584,25 @@ foreach ($hikayeler as $hikaye) {
                             </td>
 
                             <td>
-                                <span class="durum <?= htmlspecialchars($hikaye["durum"]) ?>">
-                                    <?php
-                                    if ($hikaye["durum"] === "yayinda") {
-                                        echo "Yayında";
-                                    } elseif ($hikaye["durum"] === "taslak") {
-                                        echo "Taslak";
-                                    } elseif ($hikaye["durum"] === "tamamlandi") {
-                                        echo "Tamamlandı";
-                                    } else {
-                                        echo htmlspecialchars($hikaye["durum"]);
-                                    }
-                                    ?>
+                                <?php $durumAdmin = mb_strtolower(trim((string) $hikaye["durum"]), "UTF-8"); ?>
+                                <span class="durum <?= in_array($durumAdmin, ["onaylandi", "incelemede", "reddedildi", "taslak"], true) ? $durumAdmin : "taslak" ?>">
+                                    <?= $durumAdmin === "onaylandi" ? "Yayımlanmış" : ($durumAdmin === "incelemede" ? "İncelemede" : ($durumAdmin === "reddedildi" ? "Reddedildi" : "Taslak")) ?>
                                 </span>
                             </td>
 
                             <td>
-
-                                <?php if ($hikaye["durum"] === "yayinda"): ?>
-
-                                    <form method="POST" class="islem-formu"
-                                          onsubmit="return confirm('Bu hikâyeyi taslağa almak istediğine emin misin?');">
-
-                                        <input type="hidden" name="csrf_token"
-                                               value="<?= htmlspecialchars($_SESSION["csrf_token"]) ?>">
-
-                                        <input type="hidden" name="hikaye_id"
-                                               value="<?= (int)$hikaye["id"] ?>">
-
-                                        <input type="hidden" name="yeni_durum"
-                                               value="taslak">
-
-                                        <button type="submit" class="islem-buton taslak-buton">
-                                            Taslağa Al
-                                        </button>
-
-                                    </form>
-
-                                <?php elseif ($hikaye["durum"] === "taslak"): ?>
-
-                                    <form method="POST" class="islem-formu"
-                                          onsubmit="return confirm('Bu hikâyeyi yayınlamak istediğine emin misin?');">
-
-                                        <input type="hidden" name="csrf_token"
-                                               value="<?= htmlspecialchars($_SESSION["csrf_token"]) ?>">
-
-                                        <input type="hidden" name="hikaye_id"
-                                               value="<?= (int)$hikaye["id"] ?>">
-
-                                        <input type="hidden" name="yeni_durum"
-                                               value="yayinda">
-
-                                        <button type="submit" class="islem-buton yayin-buton">
-                                            Yayınla
-                                        </button>
-
-                                    </form>
-
+                                <?php if ($durumAdmin === "incelemede"): ?>
+                                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                                        <form method="POST" class="islem-formu"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION["csrf_token"]) ?>"><input type="hidden" name="hikaye_id" value="<?= (int) $hikaye["id"] ?>"><input type="hidden" name="yeni_durum" value="onaylandi"><button type="submit" class="islem-buton yayin-buton">Onayla ve Yayımla</button></form>
+                                        <form method="POST" class="islem-formu"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION["csrf_token"]) ?>"><input type="hidden" name="hikaye_id" value="<?= (int) $hikaye["id"] ?>"><input type="hidden" name="yeni_durum" value="reddedildi"><button type="submit" class="islem-buton taslak-buton">Reddet</button></form>
+                                    </div>
+                                <?php elseif ($durumAdmin === "onaylandi"): ?>
+                                    <form method="POST" class="islem-formu"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION["csrf_token"]) ?>"><input type="hidden" name="hikaye_id" value="<?= (int) $hikaye["id"] ?>"><input type="hidden" name="yeni_durum" value="taslak"><button type="submit" class="islem-buton taslak-buton">Taslağa Al</button></form>
+                                <?php elseif (in_array($durumAdmin, ["taslak", "reddedildi"], true)): ?>
+                                    <form method="POST" class="islem-formu"><input type="hidden" name="csrf_token" value="<?= htmlspecialchars($_SESSION["csrf_token"]) ?>"><input type="hidden" name="hikaye_id" value="<?= (int) $hikaye["id"] ?>"><input type="hidden" name="yeni_durum" value="incelemede"><button type="submit" class="islem-buton yayin-buton">İncelemeye Gönder</button></form>
                                 <?php else: ?>
-
                                     <span style="color:#999;">İşlem yok</span>
-
                                 <?php endif; ?>
-
                             </td>
 
                         </tr>
@@ -683,5 +661,7 @@ aramaKutusu.addEventListener("input", function () {
 });
 </script>
 
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
 </body>
 </html>

@@ -19,6 +19,7 @@ $sorgu = $db->prepare(
         b.icerik,
         b.bolum_sirasi,
         h.id AS hikaye_id,
+        h.kullanici_id AS yazar_id,
         h.baslik AS hikaye_basligi,
         h.durum,
         h.kullanici_id AS hikaye_sahibi_id,
@@ -43,15 +44,27 @@ if (!$bolum) {
 $girisYapildi = isset($_SESSION["kullanici_id"]);
 
 $adminMi = $girisYapildi &&
-    ($_SESSION["rol"] ?? "") === "admin";
+    in_array(($_SESSION["rol"] ?? ""), ["admin", "root_admin"], true);
 
 $sahibiMi = $girisYapildi &&
     (int) $_SESSION["kullanici_id"] ===
     (int) $bolum["hikaye_sahibi_id"];
 
-if ($bolum["durum"] !== "yayinda" && !$sahibiMi && !$adminMi) {
+$bolumDurumu = mb_strtolower(trim((string) $bolum["durum"]), "UTF-8");
+if ($bolumDurumu !== "onaylandi" && !$sahibiMi && !$adminMi) {
     header("Location: ../index.php");
     exit;
+}
+
+if ($bolumDurumu === "onaylandi" && $girisYapildi && !$sahibiMi) {
+    try {
+        $okumaKaydi = $db->prepare("INSERT INTO okuma_gecmisi (kullanici_id, hikaye_id, son_bolum_id, son_okuma_tarihi)
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ON DUPLICATE KEY UPDATE son_bolum_id = VALUES(son_bolum_id), son_okuma_tarihi = CURRENT_TIMESTAMP");
+        $okumaKaydi->execute([(int) $_SESSION["kullanici_id"], (int) $bolum["hikaye_id"], (int) $bolum["bolum_id"]]);
+    } catch (PDOException $e) {
+        // Chapter reading remains available until the reading-history table is installed.
+    }
 }
 
 $hikayeId = (int) $bolum["hikaye_id"];
@@ -325,6 +338,10 @@ $bolumIcerigi = $bolum["icerik"] ?? "";
             }
         }
     </style>
+<link rel="stylesheet" href="../assets/css/gece-modu.css">
+<script>try{if(localStorage.getItem("wordnest-tema")==="gece")document.documentElement.setAttribute("data-wordnest-theme","gece")}catch(e){}</script>
+<link rel="stylesheet" href="../assets/css/dil-degistir.css">
+<script>try{if(localStorage.getItem("wordnest-dil")==="en"){document.documentElement.lang="en";document.documentElement.setAttribute("data-wordnest-language","en")}}catch(e){}</script>
 </head>
 
 <body>
@@ -353,7 +370,7 @@ $bolumIcerigi = $bolum["icerik"] ?? "";
 
         <p class="hikaye-adi">
             ✍️ Yazar:
-            <?= htmlspecialchars($bolum["ad_soyad"] ?: $bolum["kullanici_adi"]) ?>
+            <a href="../kullanici/profil.php?id=<?= (int) $bolum["yazar_id"] ?>"><?= htmlspecialchars($bolum["ad_soyad"] ?: $bolum["kullanici_adi"]) ?></a>
         </p>
 
     </div>
@@ -424,5 +441,7 @@ $bolumIcerigi = $bolum["icerik"] ?? "";
 
 </div>
 
+<script src="../assets/js/gece-modu.js"></script>
+<script src="../assets/js/dil-degistir.js"></script>
 </body>
 </html>

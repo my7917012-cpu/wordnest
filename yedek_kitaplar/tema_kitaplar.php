@@ -1,0 +1,85 @@
+<?php
+session_start();
+require_once __DIR__ . "/config/baglanti.php";
+$girisYapildi = isset($_SESSION["kullanici_id"]);
+$adminMi = $girisYapildi && ($_SESSION["rol"] ?? "") === "admin";
+$kategoriId = filter_input(INPUT_GET, "kategori", FILTER_VALIDATE_INT);
+$kategoriler = $db->query("SELECT id, kategori_adi FROM kategoriler ORDER BY kategori_adi")->fetchAll();
+
+$dosyaSql = "SELECT d.id, d.kategori_id, d.baslik, d.yazar, d.uzanti, c.kategori_adi
+             FROM kitap_dosyalari d INNER JOIN kategoriler c ON c.id = d.kategori_id";
+$dosyaParams = [];
+if ($kategoriId) {
+    $dosyaSql .= " WHERE d.kategori_id = ?";
+    $dosyaParams[] = $kategoriId;
+}
+$dosyaSql .= " ORDER BY d.baslik";
+$dosyaSorgu = $db->prepare($dosyaSql);
+$dosyaSorgu->execute($dosyaParams);
+$dosyaKitaplari = $dosyaSorgu->fetchAll();
+
+$hikayeSql = "SELECT h.id, h.kategori_id, h.baslik, h.aciklama, h.kapak_resmi, u.kullanici_adi, u.ad_soyad, c.kategori_adi
+              FROM hikayeler h
+              LEFT JOIN kullanicilar u ON u.id = h.kullanici_id
+              INNER JOIN kategoriler c ON c.id = h.kategori_id
+              WHERE LOWER(TRIM(h.durum)) = 'onaylandi'";
+$hikayeParams = [];
+if ($kategoriId) {
+    $hikayeSql .= " AND h.kategori_id = ?";
+    $hikayeParams[] = $kategoriId;
+}
+$hikayeSql .= " ORDER BY h.olusturma_tarihi DESC";
+$hikayeSorgu = $db->prepare($hikayeSql);
+$hikayeSorgu->execute($hikayeParams);
+$yayindakiEserler = $hikayeSorgu->fetchAll();
+
+$gruplar = [];
+foreach ($kategoriler as $kategori) {
+    if (!$kategoriId || (int) $kategori["id"] === $kategoriId) {
+        $gruplar[(int) $kategori["id"]] = ["ad" => $kategori["kategori_adi"], "dosyalar" => [], "eserler" => []];
+    }
+}
+foreach ($dosyaKitaplari as $kitap) {
+    $gruplar[(int) $kitap["kategori_id"]]["dosyalar"][] = $kitap;
+}
+foreach ($yayindakiEserler as $eser) {
+    $gruplar[(int) $eser["kategori_id"]]["eserler"][] = $eser;
+}
+$seciliKategoriAdi = "";
+foreach ($kategoriler as $kategori) {
+    if ($kategoriId && (int) $kategori["id"] === $kategoriId) {
+        $seciliKategoriAdi = $kategori["kategori_adi"];
+    }
+}
+$icerikSayisi = count($dosyaKitaplari) + count($yayindakiEserler);
+?>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $seciliKategoriAdi ? htmlspecialchars($seciliKategoriAdi, ENT_QUOTES, "UTF-8") . " - " : "" ?>WordNest Kitaplığı</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        body{background:#fffaf5}.kitap-sayfa{max-width:1200px;margin:45px auto;padding:0 24px 65px}.kitap-sayfa h1{font-size:34px;margin-bottom:8px}.kitap-aciklama{color:#777;margin:0 0 24px}.kitap-filtre{display:flex;align-items:center;gap:10px;margin-bottom:28px}.kitap-filtre select{padding:11px 14px;border:1px solid #eee0d5;border-radius:8px;background:white;font:inherit}.kitap-grup{margin:32px 0}.kitap-grup h2{font-size:23px;color:#333;border-bottom:2px solid #ffe1cc;padding-bottom:10px}.kitap-izgara{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;margin-top:18px}.kitap-ogesi{background:white;border:1px solid #f1e3d8;border-radius:14px;padding:20px;box-shadow:0 5px 18px rgba(0,0,0,.045);min-height:190px;display:flex;flex-direction:column}.kitap-resim{height:76px;width:58px;border-radius:7px;background:linear-gradient(145deg,#f07824,#ffbd83);color:white;display:grid;place-items:center;font-size:29px;margin-bottom:13px;overflow:hidden}.kitap-resim img{width:100%;height:100%;object-fit:cover}.kitap-ogesi h3{font-size:18px;line-height:1.35;margin:0 0 5px;overflow-wrap:anywhere}.kitap-ogesi p{color:#777;margin:0 0 9px}.kitap-etiket{font-size:12px!important;color:#e85d00!important;font-weight:bold}.kitap-ogesi a{margin-top:auto;color:#e85d00;font-weight:bold;padding-top:10px}.kitap-bos{background:white;border:1px solid #f1e3d8;border-radius:12px;padding:24px;color:#777}.kitap-admin-link{display:inline-block;background:#f07824;color:white!important;padding:10px 15px;border-radius:8px;margin:0 0 14px}
+        @media(max-width:600px){.kitap-sayfa{margin-top:30px}.kitap-sayfa h1{font-size:28px}.kitap-filtre{align-items:flex-start;flex-direction:column}.kitap-filtre select{width:100%}}
+    </style>
+</head>
+<body>
+<header class="ust-menu"><div class="container menu-icerik"><a href="index.php" class="logo"><span>Word</span>Nest</a><nav class="ana-menu"><a href="index.php">Ana Sayfa</a><a href="hikayeler/liste.php">Hikâyeler</a><a href="kitaplar.php" class="aktif">Kitaplar</a></nav><div class="menu-butonlar"><?php if ($adminMi): ?><a class="giris-buton" href="admin/kitap_ekle.php">Kitap Yönetimi</a><?php elseif ($girisYapildi): ?><a class="giris-buton" href="kullanici/cikis.php">Çıkış Yap</a><?php else: ?><a class="giris-buton" href="kullanici/giris.php">Giriş Yap</a><a class="kayit-buton" href="kullanici/kayit.php">Üye Ol</a><?php endif; ?></div></div></header>
+<main class="kitap-sayfa">
+    <h1><?= $seciliKategoriAdi ? htmlspecialchars($seciliKategoriAdi, ENT_QUOTES, "UTF-8") : "WordNest Kitaplığı" ?></h1>
+    <p class="kitap-aciklama">Adminin eklediği kitapları ve yayımlanan hikâyeleri kategorilerine göre bulup WordNest içinde oku.</p>
+    <?php if ($adminMi): ?><a class="kitap-admin-link" href="admin/kitap_ekle.php">+ Kitap ekle veya yönet</a><?php endif; ?>
+    <form class="kitap-filtre" method="get"><label for="kategori">Kategori seç:</label><select id="kategori" name="kategori" onchange="this.form.submit()"><option value="">Tüm kategoriler</option><?php foreach ($kategoriler as $kategori): ?><option value="<?= (int) $kategori["id"] ?>" <?= $kategoriId === (int) $kategori["id"] ? "selected" : "" ?>><?= htmlspecialchars($kategori["kategori_adi"], ENT_QUOTES, "UTF-8") ?></option><?php endforeach; ?></select></form>
+    <?php if ($icerikSayisi === 0): ?><div class="kitap-bos"><?= $seciliKategoriAdi ? "Bu kategoride henüz kitap veya yayımlanmış eser yok." : "Henüz kitap veya yayımlanmış eser eklenmemiş." ?></div><?php endif; ?>
+    <?php foreach ($gruplar as $grup): ?>
+        <?php if ($grup["dosyalar"] || $grup["eserler"]): ?>
+            <section class="kitap-grup"><h2><?= htmlspecialchars($grup["ad"], ENT_QUOTES, "UTF-8") ?></h2><div class="kitap-izgara">
+                <?php foreach ($grup["dosyalar"] as $kitap): ?><article class="kitap-ogesi"><div class="kitap-resim" aria-hidden="true">📖</div><span class="kitap-etiket">YÜKLENEN KİTAP</span><h3><?= htmlspecialchars($kitap["baslik"], ENT_QUOTES, "UTF-8") ?></h3><p><?= htmlspecialchars($kitap["yazar"] ?: "Yazar belirtilmedi", ENT_QUOTES, "UTF-8") ?></p><a href="kitap_oku.php?id=<?= (int) $kitap["id"] ?>">WordNest'te oku →</a></article><?php endforeach; ?>
+                <?php foreach ($grup["eserler"] as $eser): ?><article class="kitap-ogesi"><div class="kitap-resim" aria-hidden="true"><?php if (!empty($eser["kapak_resmi"])): ?><img src="<?= htmlspecialchars($eser["kapak_resmi"], ENT_QUOTES, "UTF-8") ?>" alt="<?= htmlspecialchars($eser["baslik"], ENT_QUOTES, "UTF-8") ?> kapağı"><?php else: ?>📚<?php endif; ?></div><span class="kitap-etiket">YAYIMLANMIŞ ESER</span><h3><?= htmlspecialchars($eser["baslik"], ENT_QUOTES, "UTF-8") ?></h3><p><?= htmlspecialchars($eser["ad_soyad"] ?: ($eser["kullanici_adi"] ?: "Yazar"), ENT_QUOTES, "UTF-8") ?></p><a href="hikayeler/oku.php?id=<?= (int) $eser["id"] ?>">WordNest'te oku →</a></article><?php endforeach; ?>
+            </div></section>
+        <?php endif; ?>
+    <?php endforeach; ?>
+</main>
+</body>
+</html>
